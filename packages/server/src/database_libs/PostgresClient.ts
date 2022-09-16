@@ -2,6 +2,17 @@ import PG from 'pg'
 import { Connection } from '../SettingStore'
 import AbstractClient, { RawField } from './AbstractClient'
 
+export type dbs = {
+  databaseName: string | null
+  tables: []
+}
+
+export type tables = {
+  tableName: string | null
+  databaseName: string | null
+  createdBy: string | null
+}
+
 export default class PosgresClient extends AbstractClient {
   connection: PG.Client | null = null
 
@@ -39,7 +50,7 @@ export default class PosgresClient extends AbstractClient {
     this.connection = null
   }
 
-  getTables(): Promise<string[]> {
+  getTables(dataBase: string): Promise<string[]> {
     const sql = `
       SELECT c.relname as table_name FROM pg_class c LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
        WHERE n.nspname = 'public'

@@ -2,8 +2,24 @@ import { readFileSync } from 'fs'
 import log4js from 'log4js'
 import { SSHConnection } from 'node-ssh-forward'
 import { Connection } from '../SettingStore'
+import { syncBody } from './CommonUtils'
 
 const logger = log4js.getLogger()
+export const dbs = []
+
+async function getAllDatabases():string[]{
+  console.log("call method getAllDatabases ============")
+  var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/all');
+  console.log("result return =====>>>",body.status);
+  if(+body.status===0){
+    console.log("request linkis datasource all success!")
+  }else{
+    console.log("linkis call error:",body.message)
+    return body.message;
+  }
+  dbs = body.data.dbs 
+  return body;
+}
 
 export type RawField = {
   field: string
@@ -47,63 +63,47 @@ export default abstract class AbstractClient {
 
   async getSchema(): Promise<Schema> {
     const schema: Schema = { tables: [], functions: [] }
-    const sshConnection = this.settings.ssh?.remoteHost
-      ? new SSHConnection({
-          endHost: this.settings.ssh.remoteHost,
-          username: this.settings.ssh.user,
-          privateKey: readFileSync(
-            this.settings.ssh.identityFile || `${process.env.HOME}/.ssh/id_rsa`
-          ),
-          passphrase: this.settings.ssh.passphrase || '',
-        })
-      : null
-    if (sshConnection) {
-      await sshConnection
-        .forward({
-          fromPort: this.settings.port || this.DefaultPort,
-          toPort: this.settings.ssh?.dbPort || this.DefaultPort,
-          toHost: this.settings.ssh?.dbHost || '127.0.0.1',
-        })
-        .then((v) => {
-          if (v) {
-            logger.error('Failed to ssh remote server')
-            logger.error(v)
-          }
-          return []
-        })
-    }
-    if (!(await this.connect())) {
-      logger.error('AbstractClinet.getSchema: failed to connect database')
-      return { tables: [], functions: [] }
-    }
     try {
-      const tables = await this.getTables()
-      schema.tables = await Promise.all(
-        tables.map((v) =>
-          this.getColumns(v).then((columns) => ({
-            catalog: null,
-            database: this.settings.database,
-            tableName: v,
-            columns: columns.map((v) => this.toColumnFromRawField(v)),
-          }))
+      //const tables = await this.getTables()
+      let result = await getAllDatabases()
+      let databaseArry=[]
+      result.data.dbs.map(item=>{
+         databaseArry.push(item.databaseName)
+      })
+      //console.log("get linkis databaseArry:",databaseArry)
+      let array_schema=new Array() 
+      for(var datasourceConfig of databaseArry){
+        const tables = await this.getTables(datasourceConfig)
+        schema.tables = await Promise.all(
+          tables.map((v) =>
+            this.getColumns(v).then((columns:any) => ({
+              catalog: null,
+              database: datasourceConfig,
+              tableName: v,
+              columns: null,
+              //columns: columns.map((v:any) => this.toColumnFromRawField(v)),
+            }))
+          )
         )
-      )
+    //console.log("schema.tables-1:",schema.tables)
+    array_schema.push(schema.tables)
+    }
+    schema.tables = array_schema.flat(Infinity)
+   // console.log("tables:",array_schema)
+   // console.log("AbstractClient async getSchema:",JSON.stringify(schema))
     } catch (e) {
       logger.error(e)
       throw e
-    } finally {
-      this.disconnect()
-      if (sshConnection) {
-        sshConnection.shutdown()
-      }
-    }
+    } 
     return schema
   }
 
   private toColumnFromRawField(field: RawField): Column {
+  // console.log("call method toColumnFromRawField:",field)
     return {
       columnName: field.field,
       description: `${field.field}(Type: ${field.type}, Null: ${field.null}, Default: ${field.default})`,
     }
   }
+
 }

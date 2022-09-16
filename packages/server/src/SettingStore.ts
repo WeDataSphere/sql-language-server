@@ -27,6 +27,7 @@ export type Connection = {
   port: number | null
   user: string | null
   database: string | null
+  databases: string[]
   password: string | null
   filename: string | null // for sqlite3
   keyFile: string | null // for BigQuery
@@ -65,6 +66,7 @@ export default class SettingStore extends EventEmitter.EventEmitter {
     port: null,
     user: null,
     database: null,
+    databases: [],
     password: null,
     ssh: null,
     filename: null,

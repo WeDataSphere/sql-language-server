@@ -9,5 +9,8 @@
     "dist",
     "test"
   ],
-  "references": [{ "path": "../../packages/sqlint" }]
+  "references": [{ "path": "../../packages/sqlint" }],
+  "include" : [
+    "src/types/*"
+  ]
 }

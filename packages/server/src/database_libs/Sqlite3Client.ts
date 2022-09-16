@@ -4,6 +4,16 @@ import { Connection } from '../SettingStore'
 import AbstractClient, { RawField } from './AbstractClient'
 
 const logger = log4js.getLogger()
+export type dbs = {
+  databaseName: string | null
+  tables: []
+}
+
+export type tables = {
+  tableName: string | null
+  databaseName: string | null
+  createdBy: string | null
+}
 
 export class RequireSqlite3Error extends Error {
   constructor(message: string) {
@@ -58,7 +68,7 @@ export default class Sqlite3Client extends AbstractClient {
     this.connection = null
   }
 
-  getTables(): Promise<string[]> {
+  getTables(dataBase: string): Promise<string[]> {
     const sql = `SELECT name FROM sqlite_master WHERE type='table'`
     return new Promise((resolve, reject) => {
       if (!this.connection) {

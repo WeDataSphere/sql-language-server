@@ -1,12 +1,12 @@
 import * as path from 'path'
-import * as os from 'os'
 import log4js from 'log4js'
 
 const MAX_LOG_SIZE = 1024 * 1024
 const MAX_LOG_BACKUPS = 10
-const LOG_FILE_PATH = path.join(os.tmpdir(), 'sql-language-server.log')
+const LOG_FILE_PATH = path.join(path.resolve(__dirname, '../../../'), 'sql-language-server.log')
 
 export default function initializeLogging(debug = false) {
+console.log("LOG_FILE_PATH:",LOG_FILE_PATH)
   log4js.configure({
     appenders: {
       server: {

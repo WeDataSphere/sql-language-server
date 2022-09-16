@@ -29,16 +29,34 @@ import { Schema } from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
+import { syncBody } from './database_libs/CommonUtils'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
 const TRIGGER_CHARATER = '.'
+const insertTable = ''
+const map_schema={}
+const cache_tables=[]
+
+export const map_colums={}
+//let schema: Schema = { tables: [], functions: [] }
+
+export type ColumsInfo = {
+  columnComment: string | null
+  columnName: string
+  columnType: string
+}
 
 export function createServerWithConnection(
   connection: Connection,
+  dss_cookie: string,
   debug = false
 ) {
   initializeLogging(debug)
+  //赋值cookie到全局变量
+  global.cookies=dss_cookie
+  absolveCookies(dss_cookie)
+  console.log("createServerWithConnection cookie:",dss_cookie)
   const logger = log4js.getLogger()
   const documents = new TextDocuments(TextDocument)
   documents.listen(connection)
@@ -159,9 +177,20 @@ export function createServerWithConnection(
             const client = getDatabaseClient(
               SettingStore.getInstance().getSetting()
             )
-            schema = await client.getSchema()
-            logger.debug('get schema')
-            logger.debug(JSON.stringify(schema))
+            //console.log("get schema",JSON.stringify(schema),JSON.stringify(schema)==='{"tables":[],"functions":[]}')
+            console.log("user if global.ticketId:",global.ticketId)
+            console.log("!Object.keys(map_schema).includes(global.ticketId)==>",Object.keys(map_schema),global.ticketId,!Object.keys(map_schema).includes(global.ticketId))
+            if(JSON.stringify(schema)==='{"tables":[],"functions":[]}'&&Object.keys(map_schema)===0){
+               console.log("process in call get schema 1")
+               schema = await client.getSchema()
+               map_schema[global.ticketId] = schema  
+            }else if(!Object.keys(map_schema).includes(global.ticketId)){
+               console.log("process in call get schema 2")
+               schema = await client.getSchema()
+               map_schema[global.ticketId] = schema
+            }else{
+               schema = map_schema[global.ticketId]
+            }
           } catch (e) {
             logger.error('failed to get schema info')
             if (e instanceof RequireSqlite3Error) {
@@ -188,7 +217,8 @@ export function createServerWithConnection(
       SettingStore.getInstance().setSettingFromWorkspaceConfig(connections)
     } else if (rootPath) {
       SettingStore.getInstance().setSettingFromFile(
-        `${process.env.HOME}/.config/sql-language-server/.sqllsrc.json`,
+         path.join(path.resolve(__dirname, '../../../'), '.sqllsrc.json'),  
+      //`${process.env.HOME}/.config/sql-language-server/.sqllsrc.json`,
         `${rootPath}/.sqllsrc.json`,
         rootPath || ''
       )
@@ -234,6 +264,8 @@ export function createServerWithConnection(
   connection.onCompletion((docParams: CompletionParams): CompletionItem[] => {
     // Make sure the client does not send use completion request for characters
     // other than the dot which we asked for.
+    //console.log("createServer conCompletion docParams:",JSON.stringify(docParams))
+    //logger.info("createServer conCompletion docParams:",JSON.stringify(docParams))
     if (
       docParams.context?.triggerKind == CompletionTriggerKind.TriggerCharacter
     ) {
@@ -241,6 +273,7 @@ export function createServerWithConnection(
         return []
       }
     }
+    logger.info("createServer onCompletion docParams:",docParams)
     const text = documents.get(docParams.textDocument.uri)?.getText()
     if (!text) {
       return []
@@ -251,12 +284,16 @@ export function createServerWithConnection(
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
+    logger.info("createServer get setting:",setting);
+    logger.info("createServer onCompletion get schema:",schema);
     const candidates = complete(
       text,
       pos,
       schema,
       setting.jupyterLabMode
     ).candidates
+    //console.log('createServer onCompletion returns: ',candidates)
+    logger.info('createServer onCompletion returns: ' + JSON.stringify(candidates))
     if (logger.isDebugEnabled())
       logger.debug('onCompletion returns: ' + JSON.stringify(candidates))
     return candidates
@@ -320,7 +357,22 @@ export function createServerWithConnection(
     return [action]
   })
 
-  connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
+    if(item.label.indexOf(TRIGGER_CHARATER) != -1){
+       let table_info = item.label.split(".")
+       console.log("cache_table.includes(item.label)",cache_tables.includes(item.label),item.label)
+       if(cache_tables.includes(item.label)){
+           return item
+       }
+       let colums =  await getTableColums(item.label)
+       schema.tables.forEach(x=>{
+          if(x.database==table_info[0]&&x.tableName==table_info[1]){
+             x.columns = colums.columns
+          }
+       });
+       map_schema[global.ticketId] = schema
+       cache_tables.push(item.label)
+    }
     return item
   })
 
@@ -392,8 +444,29 @@ export function createServerWithConnection(
 }
 
 export function createServer(
-  params: { method?: ConnectionMethod; debug?: boolean } = {}
+  params: { method?: ConnectionMethod; cookie?: string; debug?: boolean } = {}
 ) {
   const connection: Connection = createConnection(params.method ?? 'node-ipc')
-  return createServerWithConnection(connection, params.debug)
+  return createServerWithConnection(connection, params.cookie || '', params.debug)
+}
+
+function absolveCookies(cookie:string){
+  var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
+  var linkis_user_session_ticket_id_v1 = cookie.match(regExp_user_ticket_id)||[];
+  global.ticketId = linkis_user_session_ticket_id_v1[0]
+  //console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
+}
+
+async function getTableColums(insertTable:string):ColumsInfo[]{
+   console.log("call function getTableColums...")
+   let table_info = insertTable.split(".")
+   console.log("table_info:",table_info)
+   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1]);
+   if(+body.status===0){
+      console.log("call linkis method /api/rest_j/v1/datasource/columns?database="+table_info[0]+'&table='+table_info[1]+"success!")
+   }else{
+      console.log(body.message)
+   }
+   //console.log("request linkis getColums=====>",body.data)
+   return body.data
 }

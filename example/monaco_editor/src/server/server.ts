@@ -7,6 +7,7 @@ import type rpc from "vscode-ws-jsonrpc";
 import { launchServer } from "./launchServer";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+process.setMaxListeners(0)
 process.on("uncaughtException", function (err: any) {
   console.error("Uncaught Exception: ", err.toString());
   if (err.stack) {
@@ -45,13 +46,17 @@ function startServer() {
             onClose: (cb) => webSocket.on("close", cb),
             dispose: () => webSocket.close(),
           };
+          let dss_cookie='';
+          if(request.headers.cookie != undefined){
+            dss_cookie = request.headers.cookie;
+          }
           if (webSocket.readyState === webSocket.OPEN) {
             console.log("ready to launch server");
-            launchServer(socket);
+            launchServer(socket,dss_cookie);
           } else {
             webSocket.on("open", () => {
               console.log("ready to launch server");
-              launchServer(socket);
+              launchServer(socket,dss_cookie);
             });
           }
         });

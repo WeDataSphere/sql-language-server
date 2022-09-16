@@ -2,6 +2,17 @@ import { BigQuery } from '@google-cloud/bigquery'
 import { Connection } from '../SettingStore'
 import AbstractClient, { RawField } from './AbstractClient'
 
+export type dbs = {
+  databaseName: string | null
+  tables: []
+}
+
+export type tables = {
+  tableName: string | null
+  databaseName: string | null
+  createdBy: string | null
+}
+
 export default class BigqueryClient extends AbstractClient {
   connection: BigQuery | null = null
 
@@ -31,7 +42,7 @@ export default class BigqueryClient extends AbstractClient {
     this.connection = null
   }
 
-  async getTables(): Promise<string[]> {
+  async getTables(dataBase: string): Promise<string[]> {
     const ds = this.connection!.dataset(this.settings.database!)!
     const [tables] = await ds.getTables()
     return tables.map((t) => t.metadata.id)

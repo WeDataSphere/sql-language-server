@@ -2,9 +2,10 @@ import * as rpc from '@codingame/monaco-jsonrpc'
 import { createConnection } from 'vscode-languageserver/node'
 import { createServerWithConnection } from 'sql-language-server/src/createServer'
 
-export function launchServer(socket: rpc.IWebSocket) {
+export function launchServer(socket: rpc.IWebSocket,dss_cookie: string) {
   const reader = new rpc.WebSocketMessageReader(socket)
   const writer = new rpc.WebSocketMessageWriter(socket)
+console.log("launchServer socket:",dss_cookie);
   const asExternalProccess =
     process.argv.findIndex((value) => value === '--external') !== -1
   if (asExternalProccess) {
@@ -29,6 +30,6 @@ export function launchServer(socket: rpc.IWebSocket) {
   } else {
     // start the language server inside the current process
     const connection = createConnection(reader, writer)
-    createServerWithConnection(connection)
+    createServerWithConnection(connection,dss_cookie)
   }
 }
