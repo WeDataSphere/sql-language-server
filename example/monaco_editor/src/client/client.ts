@@ -35,7 +35,7 @@ export function initClient() {
 
   MonacoServices.install(monaco);
 
-  const URL = "ws://localhost:3000/server";
+  const URL = "ws://127.0.0.1:3000/server";
   const webSocket = createWebSocket(URL) as WebSocket;
   listen({
     webSocket,
