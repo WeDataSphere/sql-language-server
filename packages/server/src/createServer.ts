@@ -359,7 +359,7 @@ export function createServerWithConnection(
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
     if(item.label.indexOf(TRIGGER_CHARATER) != -1){
-       let table_info = item.label.split(".")
+       let table_info = item.label.split(TRIGGER_CHARATER)
        console.log("cache_table.includes(item.label)",cache_tables.includes(item.label),item.label)
        if(cache_tables.includes(item.label)){
            return item
