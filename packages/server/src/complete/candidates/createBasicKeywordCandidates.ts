@@ -9,6 +9,11 @@ const CLAUSES: string[] = [
   '--',
   '/*',
   '(',
+  'COUNT()',
+  'AVG()',
+  'SUM()',
+  'MIN()',
+  'MAX()',
 ]
 
 export function createBasicKeywordCandidates() {

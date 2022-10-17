@@ -31,11 +31,14 @@ export function initClient() {
     ),
     glyphMargin: true,
     tabCompletion: "on",
+    lightbulb: {
+      enabled: true
+    }
   });
 
   MonacoServices.install(monaco);
 
-  const URL = "ws://127.0.0.1:3000/server";
+  const URL = "ws://10.107.97.166:8088/server";
   const webSocket = createWebSocket(URL) as WebSocket;
   listen({
     webSocket,
@@ -65,7 +68,7 @@ export function initClient() {
       clientOptions: {
         documentSelector: ["sql"],
         workspaceFolder: {
-          uri: URI.file("/opt/sql-language-server/example/monaco_editor"),
+          uri: URI.file("/appcom/Install/languageInstall/sql-language-server/example/monaco_editor"),
           name: "workspace",
           index: 0,
         },
@@ -115,10 +118,10 @@ export function executeSwitchDatabaseCommand(db: string) {
 
 export function executeWorkspaceConfig(_db: string) {
   // TODO: implement
-  // languageClient.sendRequest('workspace/configuration', { test: 'test' }).catch(e => {
-  //   console.log('--- error ---')
-  //   console.log(e)
-  // })
+   languageClient.sendRequest('workspace/configuration', { test: 'test' }).catch(e => {
+     console.log('--- error ---')
+     console.log(e)
+   })
 }
 
 export function getConnectionList() {

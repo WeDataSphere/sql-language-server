@@ -13,14 +13,14 @@ const configFiles = [
 
 const defaultConfig: Config = {
   rules: {
-    'align-column-to-the-first': { level: ErrorLevel.Error },
-    'column-new-line': { level: ErrorLevel.Error },
-    'linebreak-after-clause-keyword': { level: ErrorLevel.Error },
-    'reserved-word-case': { level: ErrorLevel.Error, option: 'upper' },
-    'space-surrounding-operators': { level: ErrorLevel.Error },
-    'where-clause-new-line': { level: ErrorLevel.Error },
-    'align-where-clause-to-the-first': { level: ErrorLevel.Error },
-    'require-as-to-rename-column': { level: ErrorLevel.Error },
+    'align-column-to-the-first': { level: ErrorLevel.Off },
+    'column-new-line': { level: ErrorLevel.Off },
+    'linebreak-after-clause-keyword': { level: ErrorLevel.Off },
+    'reserved-word-case': { level: ErrorLevel.Warn, option: 'upper' },
+    'space-surrounding-operators': { level: ErrorLevel.Off },
+    'where-clause-new-line': { level: ErrorLevel.Off },
+    'align-where-clause-to-the-first': { level: ErrorLevel.Off },
+    'require-as-to-rename-column': { level: ErrorLevel.Off },
   },
 }
 

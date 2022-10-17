@@ -4,10 +4,11 @@ const requestSync = require("request");
 export const dbs = []
 const map_all = {}
 
-export let synchronous_method = function (url) {
+export let synchronous_method = function (url,method) {
+console.log("common utils sychronous_method method:",url,method)
   let options = {
       url: url,
-      method: 'GET',
+      method: method,
       headers: {
             'Content-Type':"application/json",
             json:true,
@@ -15,19 +16,32 @@ export let synchronous_method = function (url) {
         }
   };
   console.log("synchronous_method options**********",options)
-  return new Promise(function (resolve, reject) {
-      requestSync(options, function (error, response, body) {
+  if(method === 'GET'){
+    return new Promise(function (resolve, reject) {
+      requestSync.get(options, function (error, response, body) {
           if (error) {
               reject(error);
           } else {
               resolve(body);
           }
       });
-  });
+    });
+  }else{
+    return new Promise(function (resolve, reject) {
+      requestSync.post(options, function (error, response, body) {
+          if (error) {
+              reject(error);
+          } else {
+              resolve(body);
+          }
+      });
+    });
+  }
 }
 
-export let syncBody = async function (url) {
+export let syncBody = async function (url,method) {
+  console.log("get into syncBody:",url,method)
   var url = url;
-  let body = await synchronous_method(url);
+  let body = await synchronous_method(url,method);
   return JSON.parse(body);
 }

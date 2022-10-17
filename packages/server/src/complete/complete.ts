@@ -77,6 +77,7 @@ class Completer {
     const target = getRidOfAfterPosString(this.sql, this.pos)
     logger.debug(`target: ${target}`)
     this.lastToken = getLastToken(target)
+    logger.debug('this.lastToken:',this.lastToken)
     const idx = this.lastToken.lastIndexOf('.')
     this.isSpaceTriggerCharacter = this.lastToken === ''
     this.isDotTriggerCharacter =
@@ -84,6 +85,7 @@ class Completer {
 
     try {
       const ast = parse(target)
+      logger.debug("after parse target:",ast)
       this.addCandidatesForParsedStatement(ast)
     } catch (_e: unknown) {
       logger.debug('error')
@@ -127,17 +129,20 @@ class Completer {
         offset: e.location.start.offset,
       }
     }
+    //console.log("add candidates For incomplete:",this.candidates)
     return this.candidates
   }
 
   addCandidatesForBasicKeyword() {
     createBasicKeywordCandidates().forEach((v) => {
+      //console.log("on complete addCandidatesForBasicKeyword:",v)
       this.addCandidate(v)
     })
   }
 
   addCandidatesForExpectedLiterals(expected: ExpectedLiteralNode[]) {
     createKeywordCandidatesFromExpectedLiterals(expected).forEach((v) => {
+      //console.log("on complete addCandidatesForExpectedLiterals:",v)
       this.addCandidate(v)
     })
   }
@@ -173,6 +178,7 @@ class Completer {
   addCandidatesForTables(tables: Table[], onFromClause: boolean) {
     createTableCandidates(tables, this.lastToken, onFromClause).forEach(
       (item) => {
+        //console.log("on complete addCandidatesForTables:",item)
         this.addCandidate(item)
       }
     )

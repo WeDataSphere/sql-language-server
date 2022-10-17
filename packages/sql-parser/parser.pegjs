@@ -1124,7 +1124,7 @@ char = .
 whitespace =
   [ \t\n\r]
 
-Comment =
+Comment = 
   SingleLineComment / MultiLineComment
 
 SingleLineComment =

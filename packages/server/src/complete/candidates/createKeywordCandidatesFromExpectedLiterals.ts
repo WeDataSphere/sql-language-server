@@ -26,6 +26,7 @@ export function createKeywordCandidatesFromExpectedLiterals(
 ): CompletionItem[] {
   const literals = nodes.map((v) => v.text)
   const uniqueLiterals = [...new Set(literals)]
+  console.log("createKeywordCandidatesFromExpectedLiterals:",uniqueLiterals)
   return uniqueLiterals
     .filter((v) => !UNDESIRED_LITERAL.includes(v))
     .map((v) => {

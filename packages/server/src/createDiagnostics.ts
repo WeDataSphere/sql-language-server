@@ -60,6 +60,7 @@ export default function createDiagnostics(
   logger.debug(`createDiagnostics`)
   let diagnostics: Diagnostic[] = []
   try {
+    logger.debug("createDiagnostics sql:",sql)
     const ast = parse(sql)
     logger.debug(`ast: ${JSON.stringify(ast)}`)
     diagnostics = doLint(uri, sql, config)

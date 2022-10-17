@@ -10,7 +10,6 @@
   const commands = [
     { id: 'fixAllFixableProblems', text: 'fixAllFixableProblems' },
     { id: 'switchDatabaseConnection', text: 'switchDatabaseConnection' },
-    { id: 'workspace/configuration', text: 'workspace/configuration' },
   ]
 
   let command = commands[0]
@@ -20,8 +19,6 @@
       executeFixAllFixableProblemsCommand()
     } else if (command.id === 'switchDatabaseConnection') {
       executeSwitchDatabaseCommand(connection)
-    } else if (command.id === 'workspace/configuration') {
-      executeWorkspaceConfig(connection)
     }
   }
 
