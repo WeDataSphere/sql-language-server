@@ -8,17 +8,28 @@ const logger = log4js.getLogger()
 export const dbs = []
 
 async function getAllDatabases():string[]{
-  console.log("call method getAllDatabases ============")
-  var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/all');
-  console.log("result return =====>>>",body.status);
+  var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/all','GET');
   if(+body.status===0){
     console.log("request linkis datasource all success!")
   }else{
     console.log("linkis call error:",body.message)
-    return body.message;
+    return;
   }
-  dbs = body.data.dbs 
-  return body;
+  const result = body.data.dbs 
+  dbs = result
+  return result;
+}
+
+async function getUdfAll():string[]{
+   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/udf/all','POST');
+   if(+body.status===0){
+    console.log("request linkis udf all success!")
+  }else{
+    console.log("linkis call error:",body.message)
+    return;
+  }
+  const udfInfos = body.data.udfTree.udfInfos
+  return udfInfos
 }
 
 export type RawField = {
@@ -63,14 +74,26 @@ export default abstract class AbstractClient {
 
   async getSchema(): Promise<Schema> {
     const schema: Schema = { tables: [], functions: [] }
+    let functions = []
     try {
-      //const tables = await this.getTables()
+      console.log("================abstract get schema ===================")
+      let udfs = await getUdfAll()
+      if(typeof(udfs)=="undefined") return;
+      let udfArray = Array.from(udfs)
+      functions = udfArray.map(udf=>({
+         name: udf.udfName+"()",
+         description: udf.udfName+"()"
+      }));
+      schema.functions = functions
       let result = await getAllDatabases()
+      if(typeof(result)=="undefined"){
+         result=[];
+      }
+      let dbsArray = Array.from(result)
       let databaseArry=[]
-      result.data.dbs.map(item=>{
+      dbsArray.map(item=>{
          databaseArry.push(item.databaseName)
       })
-      //console.log("get linkis databaseArry:",databaseArry)
       let array_schema=new Array() 
       for(var datasourceConfig of databaseArry){
         const tables = await this.getTables(datasourceConfig)
@@ -85,12 +108,9 @@ export default abstract class AbstractClient {
             }))
           )
         )
-    //console.log("schema.tables-1:",schema.tables)
     array_schema.push(schema.tables)
     }
     schema.tables = array_schema.flat(Infinity)
-   // console.log("tables:",array_schema)
-   // console.log("AbstractClient async getSchema:",JSON.stringify(schema))
     } catch (e) {
       logger.error(e)
       throw e
@@ -99,7 +119,6 @@ export default abstract class AbstractClient {
   }
 
   private toColumnFromRawField(field: RawField): Column {
-  // console.log("call method toColumnFromRawField:",field)
     return {
       columnName: field.field,
       description: `${field.field}(Type: ${field.type}, Null: ${field.null}, Default: ${field.default})`,
