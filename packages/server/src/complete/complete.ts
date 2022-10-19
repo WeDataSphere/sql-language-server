@@ -23,6 +23,7 @@ import {
   getNearestFromTableFromPos,
 } from './AstUtils'
 import { createBasicKeywordCandidates } from './candidates/createBasicKeywordCandidates'
+import { createCusFunctionCandidates } from './candidates/createCusFunctionCandidates'
 import { createTableCandidates } from './candidates/createTableCandidates'
 import { createJoinCondidates } from './candidates/createJoinCandidates'
 import {
@@ -158,7 +159,7 @@ class Completer {
       return
     } else {
       const replaceWords = item.label
-      console.log("replace words:",replaceWords)
+      //console.log("replace words:",replaceWords)
       // lower case
       if (this.lastToken>='a' && this.lastToken<='z') {
          if (replaceWords.indexOf(item.label) > -1) {
@@ -247,6 +248,7 @@ class Completer {
       ) || []
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForFunctions()
+    this.addCandidatesForCusFunction()
     this.addCandidatesForTables(this.schema.tables, false)
   }
 
@@ -260,6 +262,7 @@ class Completer {
       ) || []
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForFunctions()
+    this.addCandidatesForCusFunction()
     this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
     this.addCandidatesForAliases(fromNodes)
     this.addCandidatesForTables(schemaAndSubqueries, true)
@@ -324,17 +327,18 @@ class Completer {
         this.addCandidatesForAliases(fromNodes)
         this.addCandidatesForTables(schemaAndSubqueries, true)
         this.addCandidatesForFunctions()
+        this.addCandidatesForCusFunction()
       }
     }
-    if (logger.isDebugEnabled())
-      logger.debug(`parse query returns: ${JSON.stringify(this.candidates)}`)
+    //if (logger.isDebugEnabled())
+    //  logger.debug(`parse query returns: ${JSON.stringify(this.candidates)}`)
   }
 
   addCandidatesForParsedStatement(ast: AST) {
-    if (logger.isDebugEnabled())
-      logger.debug(
-        `getting candidates for parse query ast: ${JSON.stringify(ast)}`
-      )
+    //if (logger.isDebugEnabled())
+      //logger.debug(
+      //  `getting candidates for parse query ast: ${JSON.stringify(ast)}`
+     // )
     if (!ast.type) {
       this.addCandidatesForBasicKeyword()
     } else if (ast.type === 'delete') {
@@ -358,33 +362,33 @@ class Completer {
   }
 
   addCandidatesForFunctions() {
-    console.time('addCandidatesForFunctions')
     createFunctionCandidates(this.schema.functions, this.lastToken).forEach(
       (v) => {
         this.addCandidate(v)
       }
     )
-    console.timeEnd('addCandidatesForFunctions')
+  }
+
+  addCandidatesForCusFunction() {
+    createCusFunctionCandidates().forEach((v) => {
+      this.addCandidate(v)
+    })
   }
 
   addCandidatesForSelectStar(fromNodes: FromTableNode[], tables: Table[]) {
-    console.time('addCandidatesForSelectStar')
     createSelectAllColumnsCandidates(fromNodes, tables, this.lastToken).forEach(
       (v) => {
         this.addCandidate(v)
       }
     )
-    console.timeEnd('addCandidatesForSelectStar')
   }
 
   addCandidatesForScopedColumns(fromNodes: FromTableNode[], tables: Table[]) {
-    console.time('addCandidatesForScopedColumns')
     createCandidatesForScopedColumns(fromNodes, tables, this.lastToken).forEach(
       (v) => {
         this.addCandidate(v)
       }
     )
-    console.timeEnd('addCandidatesForScopedColumns')
   }
 
   addCandidatesForAliases(fromNodes: FromTableNode[]) {
@@ -400,11 +404,9 @@ export function complete(
   schema: Schema = { tables: [], functions: [] },
   jupyterLabMode = false
 ) {
-  console.time('complete')
-  if (logger.isDebugEnabled())
-    logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
+  //if (logger.isDebugEnabled())
+  //  logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
   const completer = new Completer(schema, sql, pos, jupyterLabMode)
   const candidates = completer.complete()
-  console.timeEnd('complete')
   return { candidates: candidates, error: completer.error }
 }

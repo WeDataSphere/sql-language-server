@@ -38,7 +38,7 @@ const TRIGGER_CHARATER = '.'
 const insertTable = ''
 let map_schema={}
 let cache_tables=[]
-let map_association_catch = {}
+//let map_association_catch = {}
 let map_operate = {}
 
 export const map_colums={}
@@ -184,16 +184,8 @@ export function createServerWithConnection(
 
   connection.onInitialized(async () => {
     SettingStore.getInstance().on('change', async () => {
-      logger.debug('onInitialize: receive change event from SettingStore')
+      //logger.debug('onInitialize: receive change event from SettingStore')
       try {
-        try {
-          connection.sendNotification('sqlLanguageServer.finishSetup', {
-            personalConfig: SettingStore.getInstance().getPersonalConfig(),
-            config: SettingStore.getInstance().getSetting(),
-          })
-        } catch (e) {
-          logger.error('onInitialize:'+e)
-        }
         //get schema form database client
         try {
            const client = getDatabaseClient()
@@ -201,11 +193,11 @@ export function createServerWithConnection(
            //console.log("user if global.ticketId:",global.ticketId)
            //console.log("!Object.keys(map_schema).includes(global.ticketId)==>",Object.keys(map_schema),global.ticketId,!Object.keys(map_schema).includes(global.ticketId))
            if(JSON.stringify(schema)==='{"tables":[],"functions":[]}'&&Object.keys(map_schema)===0){
-              console.log("process in call get schema 1")
+              logger.info("process in call get schema 1")
               schema = await client.getSchema()
               map_schema[global.ticketId] = schema
            }else if(!Object.keys(map_schema).includes(global.ticketId)){
-              console.log("process in call get schema 2")
+              logger.info("process in call get schema 2")
               schema = await client.getSchema()
               map_schema[global.ticketId] = schema
            }else{
@@ -237,16 +229,14 @@ export function createServerWithConnection(
     } else if (rootPath) {
       SettingStore.getInstance().setSettingFromFile(
          path.join(path.resolve(__dirname, '../../../'), '.sqllsrc.json'),
-      //`${process.env.HOME}/.config/sql-language-server/.sqllsrc.json`,
         `${rootPath}/.sqllsrc.json`,
         rootPath || ''
       )
-      //console.log(path.join(path.resolve(__dirname, '../../../'), '.sqllsrc.json'))
     }
   })
 
   connection.onDidChangeConfiguration((change) => {
-    console.log('onDidChangeConfiguration', JSON.stringify(change))
+    logger.debug('onDidChangeConfiguration', JSON.stringify(change))
     if (!hasConfigurationCapability) {
       return
     }
@@ -304,8 +294,12 @@ export function createServerWithConnection(
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
-    logger.info("createServer get setting:",setting);
-    //logger.info("createServer onCompletion get schema:",schema);
+    console.log("connection.onCompletion association operate",map_operate[global.ticketId])
+    if(map_operate[global.ticketId] === 'close'){
+       schema = {}
+    }else if(map_operate[global.ticketId] === 'open'){
+       schema = map_schema[global.ticketId]
+    }
     const candidates = complete(
       text,
       pos,
@@ -313,8 +307,8 @@ export function createServerWithConnection(
       setting.jupyterLabMode
     ).candidates
     //logger.info('createServer onCompletion returns: ' + JSON.stringify(candidates))
-    if (logger.isDebugEnabled())
-      logger.debug('onCompletion returns: ' + JSON.stringify(candidates))
+    //if (logger.isDebugEnabled())
+    //  logger.debug('onCompletion returns: ' + JSON.stringify(candidates))
     return candidates
   })
 
@@ -381,9 +375,8 @@ export function createServerWithConnection(
     console.log("on completion resolve item:",item)
     if(item.label.indexOf(TRIGGER_CHARATER) != -1){
        let table_info = item.label.split(".")
-       //console.log("cache_table.includes(item.label)",cache_tables.includes(item.label),item.label)
-       if(cache_tables.includes(item.label) || map_operate[global.ticketId] === 'close'){
-           console.log("map_operate[global.ticketId]",map_operate[global.ticketId])
+       console.log("cache_table.includes(item.label)",cache_tables.includes(item.label),item.label)
+       if(cache_tables.includes(item.label)){
            return item
        }
        let colums =  await getTableColums(item.label)
@@ -396,7 +389,7 @@ export function createServerWithConnection(
        map_schema[global.ticketId] = schema
        cache_tables.push(item.label)
     }
-    console.log("on completion resolve cache_table functions:",map_schema[global.ticketId].functions)
+    //console.log("on completion resolve cache_table functions:",map_schema[global.ticketId].functions)
     return item
   })
 
@@ -422,14 +415,18 @@ export function createServerWithConnection(
       request.command === 'changeAssociation' ||
       request.command === 'sqlLanguageServer.changeAssociation'
     ){
-      const operate = request.arguments && request.arguments[0]?.toString()) || ''
+      const operate = request.arguments ? request.arguments[0] : null
+      console.log("change association",operate)
       if( operate === 'close'){
-        map_association_catch[global.ticketId] = map_schema[global.ticketId]
-        map_schema[global.ticketId] = {}
+        //console.log("change association to close,begin to clear schema")
+        //map_association_catch[global.ticketId] = map_schema[global.ticketId]
+        //map_schema[global.ticketId] = {}
         map_operate[global.ticketId] = 'close'
       } else {
+        //console.log("change association to open,begin to restore schema")
         //恢复缓存
-        map_schema[global.ticketId] = map_association_catch[global.ticketId]
+        //map_schema[global.ticketId] = map_association_catch[global.ticketId]
+        map_operate[global.ticketId] = 'open'
       }
     } else if (
       request.command === 'fixAllFixableProblems' ||
@@ -507,7 +504,7 @@ async function getTableColums(insertTable:string):ColumsInfo[]{
    }else{
       console.log(body.message)
    }
-   //console.log("request linkis getColums=====>",body.data)
+   console.log("request linkis getColums=====>",body.data)
    return body.data
 }
 

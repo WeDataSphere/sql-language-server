@@ -37,3 +37,12 @@ export function toCompletionItemForKeyword(name: string): CompletionItem {
   }
   return item
 }
+
+export function toCompletionItemForCusFunction(name: string): CompletionItem {
+  const item: CompletionItem = {
+    label: name,
+    kind: ICONS.FUNCTION,
+    detail: 'cusFunction'
+  }
+  return item
+}
