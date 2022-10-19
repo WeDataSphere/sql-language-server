@@ -116,6 +116,14 @@ export function executeSwitchDatabaseCommand(db: string) {
   languageClient.sendRequest("workspace/executeCommand", params);
 }
 
+export function executeChangeAssociationCommand(operate: string) {
+  const params: ExecuteCommandParams = {
+    command: "changeAssociation",
+    arguments: [operate],
+  };
+  languageClient.sendRequest("workspace/executeCommand", params);
+}
+
 export function executeWorkspaceConfig(_db: string) {
   // TODO: implement
    languageClient.sendRequest('workspace/configuration', { test: 'test' }).catch(e => {

@@ -129,6 +129,8 @@ export function activate(context: ExtensionContext) {
   const debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] }
   let connectionNames = []
   let connectedConnectionName = ''
+  let associations = ['open','close']
+  let connectedAssociationName = ''
 
   const serverOptions: ServerOptions = {
     run: { module: serverModule, transport: TransportKind.ipc, args: execArgs },
@@ -218,6 +220,27 @@ export function activate(context: ExtensionContext) {
     }
   )
 
+  const changeAssociation = commands.registerCommand(
+      'extension.changeAssociation',
+      async () => {
+        const items = associations.map((v) => {
+          if (connectedAssociationName === v) {
+            return { label: `* ${v}`, value: v }
+          }
+          return { label: `  ${v}`, value: v }
+        })
+        const selected = await Window.showQuickPick(items)
+        if (!selected) {
+          return
+        }
+        const params: ExecuteCommandParams = {
+          command: 'changeAssociation',
+          arguments: [selected.value],
+        }
+        client.sendRequest('workspace/executeCommand', params)
+      }
+    )
+
   const fixAllFixableProblem = commands.registerCommand(
     'extension.fixAllFixableProblems',
     () => {
@@ -256,6 +279,7 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(switchConnection)
   context.subscriptions.push(fixAllFixableProblem)
+  content.subscriptions.push(changeAssociation)
   context.subscriptions.push(rebuildSqlite3)
   context.subscriptions.push(disposable)
   client.onReady().then(() => {

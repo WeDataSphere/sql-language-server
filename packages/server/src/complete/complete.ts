@@ -152,9 +152,19 @@ class Completer {
     if (
       item.kind &&
       item.kind === ICONS.KEYWORD &&
-      !item.label.startsWith(this.lastToken)
+      !item.label.toUpperCase().startsWith(this.lastToken) &&
+      !item.label.toLowerCase().startsWith(this.lastToken)
     ) {
       return
+    } else {
+      const replaceWords = item.label
+      console.log("replace words:",replaceWords)
+      // lower case
+      if (this.lastToken>='a' && this.lastToken<='z') {
+         if (replaceWords.indexOf(item.label) > -1) {
+            item.label = item.label.toLowerCase()
+         }
+      }
     }
     // JupyterLab requires the dot or space character preceeding the <tab> key pressed
     // If the dot or space character are not added to the label then searching

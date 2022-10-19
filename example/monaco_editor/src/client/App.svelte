@@ -2,6 +2,7 @@
   import {
     executeSwitchDatabaseCommand,
     executeFixAllFixableProblemsCommand,
+    executeChangeAssociationCommand,
     executeWorkspaceConfig,
     getConnectionList,
     getCurrecntConnection,
@@ -10,6 +11,7 @@
   const commands = [
     { id: 'fixAllFixableProblems', text: 'fixAllFixableProblems' },
     { id: 'switchDatabaseConnection', text: 'switchDatabaseConnection' },
+    { id: 'changeAssociations', text: 'changeAssociations' },
   ]
 
   let command = commands[0]
@@ -19,9 +21,13 @@
       executeFixAllFixableProblemsCommand()
     } else if (command.id === 'switchDatabaseConnection') {
       executeSwitchDatabaseCommand(connection)
+    } else if (command.id === 'changeAssociation') {
+      executeChangeAssociationCommand(associationName)
     }
   }
 
+  let associations = ['open','close']
+  let associationName = ''
   let connectionList = []
   let connection = ''
   function handleChangeCommand() {
@@ -49,6 +55,15 @@
       {/each}
     </select>
   {/if}
+  {#if command.id === 'changeAssociation'}
+      <select bind:value={associationName}>
+        {#each associations as asso}
+          <option value={asso}>
+            {asso}
+          </option>
+        {/each}
+      </select>
+    {/if}
   <button type=submit>Submit</button>
 </form>
 

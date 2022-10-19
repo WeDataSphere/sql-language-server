@@ -38,6 +38,8 @@ const TRIGGER_CHARATER = '.'
 const insertTable = ''
 let map_schema={}
 let cache_tables=[]
+let map_association_catch = {}
+let map_operate = {}
 
 export const map_colums={}
 //let schema: Schema = { tables: [], functions: [] }
@@ -132,7 +134,7 @@ export function createServerWithConnection(
     //    if(docText.endsWith(";")){
     //      for(var i=0;i<textArray.length-1;i++){
     //        params.document._content = textArray[i]
-    //        makeDiagnostics(params.document)    
+    //        makeDiagnostics(params.document)
     //      }
     //    }else{
     //      textArray.forEach(item=>{
@@ -173,6 +175,7 @@ export function createServerWithConnection(
           commands: [
             'sqlLanguageServer.switchDatabaseConnection',
             'sqlLanguageServer.fixAllFixableProblems',
+            'sqlLanguageServer.changeAssociation'
           ],
         },
       },
@@ -200,7 +203,7 @@ export function createServerWithConnection(
            if(JSON.stringify(schema)==='{"tables":[],"functions":[]}'&&Object.keys(map_schema)===0){
               console.log("process in call get schema 1")
               schema = await client.getSchema()
-              map_schema[global.ticketId] = schema  
+              map_schema[global.ticketId] = schema
            }else if(!Object.keys(map_schema).includes(global.ticketId)){
               console.log("process in call get schema 2")
               schema = await client.getSchema()
@@ -233,7 +236,7 @@ export function createServerWithConnection(
       SettingStore.getInstance().setSettingFromWorkspaceConfig(connections)
     } else if (rootPath) {
       SettingStore.getInstance().setSettingFromFile(
-         path.join(path.resolve(__dirname, '../../../'), '.sqllsrc.json'),  
+         path.join(path.resolve(__dirname, '../../../'), '.sqllsrc.json'),
       //`${process.env.HOME}/.config/sql-language-server/.sqllsrc.json`,
         `${rootPath}/.sqllsrc.json`,
         rootPath || ''
@@ -379,7 +382,8 @@ export function createServerWithConnection(
     if(item.label.indexOf(TRIGGER_CHARATER) != -1){
        let table_info = item.label.split(".")
        //console.log("cache_table.includes(item.label)",cache_tables.includes(item.label),item.label)
-       if(cache_tables.includes(item.label)){
+       if(cache_tables.includes(item.label) || map_operate[global.ticketId] === 'close'){
+           console.log("map_operate[global.ticketId]",map_operate[global.ticketId])
            return item
        }
        let colums =  await getTableColums(item.label)
@@ -413,6 +417,19 @@ export function createServerWithConnection(
         connection.sendNotification('sqlLanguageServer.error', {
           message: err.message,
         })
+      }
+    } else if (
+      request.command === 'changeAssociation' ||
+      request.command === 'sqlLanguageServer.changeAssociation'
+    ){
+      const operate = request.arguments && request.arguments[0]?.toString()) || ''
+      if( operate === 'close'){
+        map_association_catch[global.ticketId] = map_schema[global.ticketId]
+        map_schema[global.ticketId] = {}
+        map_operate[global.ticketId] = 'close'
+      } else {
+        //恢复缓存
+        map_schema[global.ticketId] = map_association_catch[global.ticketId]
       }
     } else if (
       request.command === 'fixAllFixableProblems' ||
