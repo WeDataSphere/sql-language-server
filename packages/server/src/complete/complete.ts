@@ -24,6 +24,7 @@ import {
 } from './AstUtils'
 import { createBasicKeywordCandidates } from './candidates/createBasicKeywordCandidates'
 import { createCusFunctionCandidates } from './candidates/createCusFunctionCandidates'
+import { createHqlKeywordCandidates } from './candidates/createHqlKeywordCandidates'
 import { createTableCandidates } from './candidates/createTableCandidates'
 import { createJoinCondidates } from './candidates/createJoinCandidates'
 import {
@@ -249,6 +250,8 @@ class Completer {
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForFunctions()
     this.addCandidatesForCusFunction()
+    this.addCandidatesForHqlKeyword()
+    //this.addCandidatesForBasicKeyword()
     this.addCandidatesForTables(this.schema.tables, false)
   }
 
@@ -262,7 +265,8 @@ class Completer {
       ) || []
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForFunctions()
-    this.addCandidatesForCusFunction()
+    //this.addCandidatesForCusFunction()
+    //this.addCandidatesForHqlKeyword()
     this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
     this.addCandidatesForAliases(fromNodes)
     this.addCandidatesForTables(schemaAndSubqueries, true)
@@ -328,6 +332,8 @@ class Completer {
         this.addCandidatesForTables(schemaAndSubqueries, true)
         this.addCandidatesForFunctions()
         this.addCandidatesForCusFunction()
+        this.addCandidatesForHqlKeyword()
+        //this.addCandidatesForBasicKeyword()
       }
     }
     //if (logger.isDebugEnabled())
@@ -377,6 +383,14 @@ class Completer {
 
   addCandidatesForSelectStar(fromNodes: FromTableNode[], tables: Table[]) {
     createSelectAllColumnsCandidates(fromNodes, tables, this.lastToken).forEach(
+      (v) => {
+        this.addCandidate(v)
+      }
+    )
+  }
+
+  addCandidatesForHqlKeyword() {
+    createHqlKeywordCandidates().forEach(
       (v) => {
         this.addCandidate(v)
       }

@@ -1,7 +1,7 @@
 import { toCompletionItemForCusFunction } from '../CompletionItemUtils'
 
 const CLAUSES: string[] = [
-   'TEST_CUS_FUNCTION()'
+   'TEST_CUS'
 ]
 
 export function createCusFunctionCandidates() {

@@ -111,7 +111,7 @@ export function createServerWithConnection(
   }
 
   async function makeDiagnostics(document: TextDocument) {
-    logger.debug("create server makeDiagnostics textDocument:",document.getText())
+    //logger.debug("create server makeDiagnostics textDocument:",document.getText())
     const hasRules =
       !!lintConfig && Object.prototype.hasOwnProperty.call(lintConfig, 'rules')
     const diagnostics = createDiagnostics(
@@ -127,25 +127,25 @@ export function createServerWithConnection(
     logger.debug(
       `onDidChangeContent: ${params.document.uri}, ${params.document.version}`
     )
-    //let docText = params.document.getText()
-    //if(docText.includes(";")){
-    //  let textArray = docText.split(";")
-    //  if(textArray !== [] && textArray.length > 1){
-    //    if(docText.endsWith(";")){
-    //      for(var i=0;i<textArray.length-1;i++){
-    //        params.document._content = textArray[i]
-    //        makeDiagnostics(params.document)
-    //      }
-    //    }else{
-    //      textArray.forEach(item=>{
-    //        params.document._content = item
-    //        makeDiagnostics(params.document)
-    //      });
-    //    }
-    //  }
-    //}else{
+    let docText = params.document.getText()
+    if(docText.includes(";")){
+      let textArray = docText.split(";")
+      if(textArray !== [] && textArray.length > 1){
+        if(docText.endsWith(";")){
+          for(var i=0;i<textArray.length-1;i++){
+            params.document._content = textArray[i]
+            makeDiagnostics(params.document)
+          }
+        }else{
+          textArray.forEach(item=>{
+            params.document._content = item
+            makeDiagnostics(params.document)
+          });
+        }
+      }
+    }else{
       makeDiagnostics(params.document)
-    //}
+    }
   })
 
   connection.onInitialize((params): InitializeResult => {
@@ -159,7 +159,7 @@ export function createServerWithConnection(
       (!!capabilities.workspace.configuration ||
         !!capabilities.workspace.didChangeConfiguration)
 
-    logger.debug(`onInitialize: ${params.rootPath}`)
+    //logger.debug(`onInitialize: ${params.rootPath}`)
     rootPath = params.rootPath || ''
 
     return {
@@ -372,7 +372,7 @@ export function createServerWithConnection(
   })
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
-    console.log("on completion resolve item:",item)
+    //console.log("on completion resolve item:",item)
     if(item.label.indexOf(TRIGGER_CHARATER) != -1){
        let table_info = item.label.split(".")
        console.log("cache_table.includes(item.label)",cache_tables.includes(item.label),item.label)
