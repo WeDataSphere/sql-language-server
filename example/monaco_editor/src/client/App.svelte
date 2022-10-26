@@ -11,7 +11,7 @@
   const commands = [
     { id: 'fixAllFixableProblems', text: 'fixAllFixableProblems' },
     { id: 'switchDatabaseConnection', text: 'switchDatabaseConnection' },
-    { id: 'changeAssociations', text: 'changeAssociations' },
+    { id: 'changeAssociation', text: 'changeAssociation' },
   ]
 
   let command = commands[0]
@@ -26,8 +26,8 @@
     }
   }
 
-  let associations = ['open','close']
   let associationName = ''
+  let associations = ['open','close']
   let connectionList = []
   let connection = ''
   function handleChangeCommand() {
@@ -56,14 +56,14 @@
     </select>
   {/if}
   {#if command.id === 'changeAssociation'}
-      <select bind:value={associationName}>
-        {#each associations as asso}
-          <option value={asso}>
-            {asso}
-          </option>
-        {/each}
-      </select>
-    {/if}
+    <select bind:value={associationName}>
+      {#each associations as asso}
+        <option value={asso}>
+          {asso}
+        </option>
+      {/each}
+    </select>
+  {/if}
   <button type=submit>Submit</button>
 </form>
 

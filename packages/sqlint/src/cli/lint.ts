@@ -71,8 +71,7 @@ export function lint(params: {
   const config = configObject
     ? convertToConfig(configObject)
     : loadConfig(configPath || process.cwd())
-  //console.log(">>>>lint.ts>>>> config:",config)
-  //console.log(">>>>lint.ts>>>> text:",text)
+
   let result: LintResult[] = text
     ? [{ filepath: 'text', diagnostics: execute(text, config) }]
     : files
@@ -81,12 +80,11 @@ export function lint(params: {
           return { filepath: v, diagnostics: diagnostics }
         })
         .flat()
-  //console.log(">>>>lint.ts>>>> result:",result)
+
   let output = ''
-  //console.log(">>>>lint.ts>>>> params:",params)
+
   if (params.fix) {
     const fixedResult = result.map((v) => {
-      //console.log(">>>>lint.ts>>>> result.map:",v)
       const MAX_AUTOFIX_LOOP = 3
       function getFixDescriptions(diagnostics: Diagnostic[]): FixDescription[] {
         return diagnostics.map((v) => v.fix).flat()

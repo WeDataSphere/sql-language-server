@@ -16,6 +16,7 @@ process.on("uncaughtException", function (err: any) {
 });
 
 let server: http.Server;
+let cookieArry = {}
 
 function startServer() {
   const app = express();
@@ -34,27 +35,41 @@ function startServer() {
       const path = request.url ? url.parse(request.url).pathname : undefined;
       if (path === "/server") {
         wss.handleUpgrade(request, socket, head, (webSocket) => {
+          let webSockets;
+          let dss_cookie='';
+          if(request.headers.cookie != undefined){
+            dss_cookie = request.headers.cookie;
+            cookieArry[dss_cookie] = webSocket
+            webSockets = cookieArry[request.headers.cookie]
+          }
+          console.log("----------------------------------")
+          console.log("cookieArry:",cookieArry)
+          //console.log("dss_cookie:",dss_cookie)
+          console.log("-----------------------------------")
           const socket: rpc.IWebSocket = {
             send: (content) =>
-              webSocket.send(content, (error) => {
+              webSockets.send(content, (error) => {
+                //console.log("content:",content)
                 if (error) {
                   throw error;
                 }
               }),
-            onMessage: (cb) => webSocket.on("message", cb),
-            onError: (cb) => webSocket.on("error", cb),
-            onClose: (cb) => webSocket.on("close", cb),
-            dispose: () => webSocket.close(),
+            onMessage: (cb) => webSockets.on("message", cb),
+            onError: (cb) => webSockets.on("error", cb),
+            onClose: (cb) => webSockets.on("close", cb),
+            dispose: () => webSockets.close(),
           };
-          let dss_cookie='';
-          if(request.headers.cookie != undefined){
-            dss_cookie = request.headers.cookie;
-          }
-          if (webSocket.readyState === webSocket.OPEN) {
+          console.log("socket:",socket)
+          //let dss_cookie='';
+          //if(request.headers.cookie != undefined){
+          //  dss_cookie = request.headers.cookie;
+          //}
+          if (webSockets.readyState === webSockets.OPEN) {
+            console.log("webSockets.OPEN dss_cookie:",dss_cookie)
             console.log("ready to launch server");
             launchServer(socket,dss_cookie);
           } else {
-            webSocket.on("open", () => {
+            webSockets.on("open", () => {
               console.log("ready to launch server");
               launchServer(socket,dss_cookie);
             });

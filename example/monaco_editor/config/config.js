@@ -9,10 +9,10 @@ module.exports = {
     "dialect": "postgres"
   },
   "mysql": {
-    "username": "sqlls",
-    "password": "sqlls",
-    "database": "mysql_db",
-    "host": "mysql",
+    "username": "root",
+    "password": "root",
+    "database": "test",
+    "host": "192.168.146.146",
     "dialect": "mysql"
   },
   "sqlite": {

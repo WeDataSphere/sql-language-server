@@ -18,7 +18,7 @@ export function initClient() {
   monaco.languages.register({
     id: "sql",
     extensions: [".sql"],
-    aliases: ["SQL", "sql"],
+    aliases: ["sql","SQL"],
     mimetypes: ["application/json"],
   });
 
@@ -68,7 +68,7 @@ export function initClient() {
       clientOptions: {
         documentSelector: ["sql"],
         workspaceFolder: {
-          uri: URI.file("/appcom/Install/languageInstall/sql-language-server/example/monaco_editor"),
+          uri: URI.file("/opt/sql-language-server/example/monaco_editor"),
           name: "workspace",
           index: 0,
         },
@@ -113,23 +113,26 @@ export function executeSwitchDatabaseCommand(db: string) {
     command: "switchDatabaseConnection",
     arguments: [db],
   };
+  console.log("execute switch database command", params)
   languageClient.sendRequest("workspace/executeCommand", params);
 }
 
-export function executeChangeAssociationCommand(operate: string) {
+export function executeChangeAssociationCommand(operate: string){
+  console.log("execute change association command", operate)
   const params: ExecuteCommandParams = {
     command: "changeAssociation",
     arguments: [operate],
   };
+  console.log("execute change association params", params)
   languageClient.sendRequest("workspace/executeCommand", params);
 }
 
 export function executeWorkspaceConfig(_db: string) {
   // TODO: implement
-   languageClient.sendRequest('workspace/configuration', { test: 'test' }).catch(e => {
-     console.log('--- error ---')
-     console.log(e)
-   })
+  // languageClient.sendRequest('workspace/configuration', { test: 'test' }).catch(e => {
+  //   console.log('--- error ---')
+  //   console.log(e)
+  // })
 }
 
 export function getConnectionList() {

@@ -36,9 +36,11 @@ export type ConnectionMethod = 'node-ipc' | 'stdio'
 
 const TRIGGER_CHARATER = '.'
 const insertTable = ''
+//let map_schema={tables: [], functions: [], association: ""}
 let map_schema={}
 let cache_tables=[]
-//let map_association_catch = {}
+//let map_association_catch = {tables: [], functions: [], association: ""}
+let map_association_catch = {}
 let map_operate = {}
 
 export const map_colums={}
@@ -67,8 +69,13 @@ export function createServerWithConnection(
 ) {
   initializeLogging(debug)
   //赋值cookie到全局变量
-  global.cookies=dss_cookie
-  absolveCookies(dss_cookie)
+  //global.cookies=dss_cookie
+  var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
+  var linkis_user_session_ticket_id_v1 = dss_cookie.match(regExp_user_ticket_id)||[];
+  var ticketId = linkis_user_session_ticket_id_v1[0]
+  console.log("ticketId:",ticketId)
+
+  //absolveCookies(dss_cookie)
   //console.log("createServerWithConnection cookie:",dss_cookie)
   const logger = log4js.getLogger()
   const documents = new TextDocuments(TextDocument)
@@ -189,20 +196,26 @@ export function createServerWithConnection(
         //get schema form database client
         try {
            const client = getDatabaseClient()
-           //console.log("get schema",JSON.stringify(schema.functions))
-           //console.log("user if global.ticketId:",global.ticketId)
-           //console.log("!Object.keys(map_schema).includes(global.ticketId)==>",Object.keys(map_schema),global.ticketId,!Object.keys(map_schema).includes(global.ticketId))
-           if(JSON.stringify(schema)==='{"tables":[],"functions":[]}'&&Object.keys(map_schema)===0){
+           console.log("call connection.onInitialized ========>>>>>")
+           //console.log("get schema",JSON.stringify(schema))
+           console.log("user if ticketId:",ticketId)
+           console.log("!Object.keys(map_schema).includes(ticketId)==>",Object.keys(map_schema),ticketId,!Object.keys(map_schema).includes(ticketId))
+           if(JSON.stringify(schema)==='{"tables":[],"functions":[],"association":""}'&&Object.keys(map_schema)===0){
               logger.info("process in call get schema 1")
-              schema = await client.getSchema()
-              map_schema[global.ticketId] = schema
-           }else if(!Object.keys(map_schema).includes(global.ticketId)){
+              console.log("process in call get schema 1")
+              map_schema[ticketId] = await client.getSchema(dss_cookie)
+              map_association_catch[ticketId] = map_schema[ticketId]
+           }else
+           if(!Object.keys(map_schema).includes(ticketId)){
               logger.info("process in call get schema 2")
-              schema = await client.getSchema()
-              map_schema[global.ticketId] = schema
+              console.log("process in call get schema 2")
+              map_schema[ticketId] = await client.getSchema(dss_cookie)
+              map_association_catch[ticketId] = map_schema[ticketId]
            }else{
-              schema = map_schema[global.ticketId]
+              schema = map_schema[ticketId]
+              map_association_catch[ticketId] = map_schema[ticketId]
            }
+           //console.log("connection.onInitialized map_schema[ticketId]:",map_schema[ticketId])
          } catch (e) {
            logger.error('failed to get schema info')
            if (e instanceof RequireSqlite3Error) {
@@ -272,10 +285,12 @@ export function createServerWithConnection(
   })
 
   connection.onCompletion((docParams: CompletionParams): CompletionItem[] => {
+    //console.log("-----------connection onCompletion-------------")
+    //console.log("map_schema[global.ticketId]:",typeof(map_schema[global.ticketId]))
+    //console.log("map_association_catch[global.ticketId]",map_association_catch[global.ticketId])
+    //console.log("-----------connection onCompletion-------------")
     // Make sure the client does not send use completion request for characters
     // other than the dot which we asked for.
-    //console.log("createServer conCompletion docParams:",JSON.stringify(docParams))
-    //logger.info("createServer conCompletion docParams:",JSON.stringify(docParams))
     if (
       docParams.context?.triggerKind == CompletionTriggerKind.TriggerCharacter
     ) {
@@ -294,16 +309,31 @@ export function createServerWithConnection(
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
-    console.log("connection.onCompletion association operate",map_operate[global.ticketId])
-    if(map_operate[global.ticketId] === 'close'){
-       schema = {}
-    }else if(map_operate[global.ticketId] === 'open'){
-       schema = map_schema[global.ticketId]
+    //console.log("connection.onCompletion association operate",map_schema[global.ticketId].association)
+    //console.log("map_association_catch:",map_association_catch[global.ticketId])
+    //console.log("not in if map_schema[global.ticketId]:",map_schema[global.ticketId])
+    if(typeof(map_schema[ticketId]) === 'undefined' || typeof(map_association_catch[ticketId]) === 'undefined'){
+       map_schema[ticketId] = {"tables":[],"functions":[],"association":""}
+       map_association_catch[ticketId] = {"tables":[],"functions":[],"association":""}
     }
+    if(map_schema[ticketId] && map_schema[ticketId].association === 'close' && Object.keys(map_schema[ticketId].tables).length > 0){
+       //console.log("into close map_schema[global.ticketId]:",map_schema[global.ticketId])
+       map_association_catch[ticketId] = map_schema[ticketId]
+       map_schema[ticketId] = {tables: [], functions: [],association: "close"}
+    }else if(map_schema[ticketId] && map_schema[ticketId].association === 'open' && Object.keys(map_association_catch[ticketId].tables).length > 0){
+       //console.log("into open map_association_catch[global.ticketId]:",map_association_catch[global.ticketId])
+       map_schema[ticketId] = map_association_catch[ticketId]
+       console.log("into open map_schema[ticketId].association:",map_schema[ticketId].association)
+    }
+    //console.log("out of if map_schema[global.ticketId]:",map_schema[global.ticketId],map_schema[global.ticketId].association)
+    //console.log("schema =========",schema)
+    console.log("connection.onCompletion text:",text)
+    console.log("ticketId:===>",ticketId)
+    //logger.info("connection.onCompletion map_schema[ticketId]",JSON.stringify(map_schema[ticketId]))
     const candidates = complete(
       text,
       pos,
-      schema,
+      map_schema[ticketId],
       setting.jupyterLabMode
     ).candidates
     //logger.info('createServer onCompletion returns: ' + JSON.stringify(candidates))
@@ -381,12 +411,12 @@ export function createServerWithConnection(
        }
        let colums =  await getTableColums(item.label)
        console.log(colums)
-       schema.tables.forEach(x=>{
+       map_schema[ticketId].tables.forEach(x=>{
           if(x.database==table_info[0]&&x.tableName==table_info[1]){
              x.columns = colums.columns
           }
        });
-       map_schema[global.ticketId] = schema
+       //map_schema[ticketId] = schema
        cache_tables.push(item.label)
     }
     //console.log("on completion resolve cache_table functions:",map_schema[global.ticketId].functions)
@@ -418,15 +448,11 @@ export function createServerWithConnection(
       const operate = request.arguments ? request.arguments[0] : null
       console.log("change association",operate)
       if( operate === 'close'){
-        //console.log("change association to close,begin to clear schema")
-        //map_association_catch[global.ticketId] = map_schema[global.ticketId]
-        //map_schema[global.ticketId] = {}
-        map_operate[global.ticketId] = 'close'
+        map_schema[ticketId].association = 'close'
+        map_association_catch[ticketId].association = 'close'
       } else {
-        //console.log("change association to open,begin to restore schema")
-        //恢复缓存
-        //map_schema[global.ticketId] = map_association_catch[global.ticketId]
-        map_operate[global.ticketId] = 'open'
+        map_schema[ticketId].association = 'open'
+        map_association_catch[ticketId].association = 'open'
       }
     } else if (
       request.command === 'fixAllFixableProblems' ||
@@ -491,14 +517,14 @@ function absolveCookies(cookie:string){
   var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
   var linkis_user_session_ticket_id_v1 = cookie.match(regExp_user_ticket_id)||[];
   global.ticketId = linkis_user_session_ticket_id_v1[0]
-  //console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
+  console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
 }
 
 async function getTableColums(insertTable:string):ColumsInfo[]{
    //console.log("call function getTableColums...")
    let table_info = insertTable.split(".")
    //console.log("table_info:",table_info)
-   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1],'GET');
+   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1],'GET',dss_cookie);
    if(+body.status===0){
       console.log("call linkis method /api/rest_j/v1/datasource/columns?database="+table_info[0]+'&table='+table_info[1]+"success!")
    }else{
