@@ -7,12 +7,12 @@ import { syncBody } from './CommonUtils'
 const logger = log4js.getLogger()
 export const dbs = []
 
-async function getAllDatabases():string[]{
-  var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/all','GET');
+async function getAllDatabases(ticketId:string):string[]{
+  var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/all','GET',ticketId);
   if(+body.status===0){
-    console.log("request linkis datasource all success!")
+    console.log(ticketId +":"+"request /api/rest_j/v1/datasource/all success!")
   }else{
-    console.log("linkis call error:",body.message)
+    console.log(ticketId +":"+"/api/rest_j/v1/datasource/all linkis call error:",body.message)
     return;
   }
   const result = body.data.dbs 
@@ -20,12 +20,12 @@ async function getAllDatabases():string[]{
   return result;
 }
 
-async function getUdfAll():string[]{
-   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/udf/all','POST');
+async function getUdfAll(ticketId:string):string[]{
+   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/udf/all','POST',ticketId);
    if(+body.status===0){
-    console.log("request linkis udf all success!")
+    console.log(ticketId +":"+ "request /api/rest_j/v1/udf/all success!")
   }else{
-    console.log("linkis call error:",body.message)
+    console.log(ticketId +":"+"/api/rest_j/v1/udf/all linkis call error:",body.message)
     return;
   }
   const udfInfos = body.data.udfTree.udfInfos
@@ -57,6 +57,7 @@ export type DbFunction = {
 export type Schema = {
   tables: Table[]
   functions: DbFunction[]
+  association: string
 }
 
 export default abstract class AbstractClient {
@@ -72,20 +73,21 @@ export default abstract class AbstractClient {
   abstract DefaultHost: string
   abstract DefaultUser: string
 
-  async getSchema(): Promise<Schema> {
-    const schema: Schema = { tables: [], functions: [] }
+  async getSchema(ticketId:string): Promise<Schema> {
+    const schema: Schema = { tables: [], functions: [] , association: ""}
     let functions = []
     try {
-      console.log("================abstract get schema ===================")
-      let udfs = await getUdfAll()
-      if(typeof(udfs)=="undefined") return;
+      console.log("================get udf ===================")
+      let udfs = await getUdfAll(ticketId)
+      if(typeof(udfs)=="undefined") return schema;
       let udfArray = Array.from(udfs)
       functions = udfArray.map(udf=>({
          name: udf.udfName+"()",
          description: udf.udfName+"()"
       }));
       schema.functions = functions
-      let result = await getAllDatabases()
+      console.log("================get all databases ===================")
+      let result = await getAllDatabases(ticketId)
       if(typeof(result)=="undefined"){
          result=[];
       }
@@ -94,6 +96,7 @@ export default abstract class AbstractClient {
       dbsArray.map(item=>{
          databaseArry.push(item.databaseName)
       })
+      console.log("载入数据库数量:",databaseArry.length)
       let array_schema=new Array() 
       for(var datasourceConfig of databaseArry){
         const tables = await this.getTables(datasourceConfig)
@@ -111,6 +114,7 @@ export default abstract class AbstractClient {
     array_schema.push(schema.tables)
     }
     schema.tables = array_schema.flat(Infinity)
+    console.log("载入表数量：",schema.tables.length)
     } catch (e) {
       logger.error(e)
       throw e

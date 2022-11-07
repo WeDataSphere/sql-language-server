@@ -76,10 +76,13 @@ class Completer {
   }
 
   complete() {
+    console.log("this.sql:",this.sql)
     const target = getRidOfAfterPosString(this.sql, this.pos)
     logger.debug(`target: ${target}`)
+    console.log("getRidOfAfterPosString target:",target)
     this.lastToken = getLastToken(target)
     logger.debug('this.lastToken:',this.lastToken)
+    console.log("this.lastToken:",this.lastToken)
     const idx = this.lastToken.lastIndexOf('.')
     this.isSpaceTriggerCharacter = this.lastToken === ''
     this.isDotTriggerCharacter =
@@ -88,10 +91,12 @@ class Completer {
     try {
       const ast = parse(target)
       logger.debug("after parse target:",ast)
+      console.log("after parse target:",ast)
       this.addCandidatesForParsedStatement(ast)
     } catch (_e: unknown) {
       logger.debug('error')
       logger.debug(_e)
+      console.log("error",_e)
       if (!(_e instanceof Error)) {
         throw _e
       }
@@ -249,10 +254,10 @@ class Completer {
       ) || []
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForFunctions()
-    this.addCandidatesForCusFunction()
+    //this.addCandidatesForCusFunction()
     this.addCandidatesForHqlKeyword()
     //this.addCandidatesForBasicKeyword()
-    this.addCandidatesForTables(this.schema.tables, false)
+    //this.addCandidatesForTables(this.schema.tables, false)
   }
 
   addCandidatesForSelectQuery(e: ParseError, fromNodes: FromTableNode[]) {
@@ -269,7 +274,7 @@ class Completer {
     //this.addCandidatesForHqlKeyword()
     this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
     this.addCandidatesForAliases(fromNodes)
-    this.addCandidatesForTables(schemaAndSubqueries, true)
+    //this.addCandidatesForTables(schemaAndSubqueries, true)
     if (logger.isDebugEnabled())
       logger.debug(
         `candidates for error returns: ${JSON.stringify(this.candidates)}`
@@ -305,7 +310,8 @@ class Completer {
   }
 
   addCandidatesForParsedSelectQuery(ast: SelectStatement) {
-    this.addCandidatesForBasicKeyword()
+    //this.addCandidatesForBasicKeyword()
+    console.log("addCandidatesForParsedSelectQuery ast:",ast)
     if (Array.isArray(ast.columns)) {
       this.addCandidate(toCompletionItemForKeyword('FROM'))
       this.addCandidate(toCompletionItemForKeyword('AS'))
@@ -314,6 +320,7 @@ class Completer {
       this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
     }
     const columnRef = findColumnAtPosition(ast, this.pos)
+    console.log("addCandidatesForParsedSelectQuery columnRef:",columnRef)
     if (!columnRef) {
       this.addJoinCondidates(ast)
     } else {
@@ -329,9 +336,9 @@ class Completer {
         // Column is not scoped to a table/alias yet
         // Could be an alias, a talbe or a function
         this.addCandidatesForAliases(fromNodes)
-        this.addCandidatesForTables(schemaAndSubqueries, true)
+        //this.addCandidatesForTables(schemaAndSubqueries, true)
         this.addCandidatesForFunctions()
-        this.addCandidatesForCusFunction()
+        //this.addCandidatesForCusFunction()
         this.addCandidatesForHqlKeyword()
         //this.addCandidatesForBasicKeyword()
       }
@@ -421,6 +428,6 @@ export function complete(
   //if (logger.isDebugEnabled())
   //  logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
   const completer = new Completer(schema, sql, pos, jupyterLabMode)
-  const candidates = completer.complete()
+  const candidates = completer.complete().slice(0,100)
   return { candidates: candidates, error: completer.error }
 }

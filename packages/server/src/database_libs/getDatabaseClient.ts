@@ -1,9 +1,9 @@
 import { Connection } from '../SettingStore'
 import AbstractClient from './AbstractClient'
 import MysqlClient from './MysqlClient'
-import PostgresClient from './PostgresClient'
-import Sqlite3Client from './Sqlite3Client'
-import BigqueryClient from './BigqueryClient'
+//import PostgresClient from './PostgresClient'
+//import Sqlite3Client from './Sqlite3Client'
+//import BigqueryClient from './BigqueryClient'
 
 export default function getDatabaseClient(): AbstractClient {
     return new MysqlClient()
