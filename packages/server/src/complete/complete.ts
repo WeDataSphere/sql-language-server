@@ -76,13 +76,9 @@ class Completer {
   }
 
   complete() {
-    console.log("this.sql:",this.sql)
-    const target = getRidOfAfterPosString(this.sql, this.pos)
-    logger.debug(`target: ${target}`)
-    console.log("getRidOfAfterPosString target:",target)
+    let target = getRidOfAfterPosString(this.sql, this.pos)
+    target = target && target.trim().split(';\n').pop() || ''
     this.lastToken = getLastToken(target)
-    logger.debug('this.lastToken:',this.lastToken)
-    console.log("this.lastToken:",this.lastToken)
     const idx = this.lastToken.lastIndexOf('.')
     this.isSpaceTriggerCharacter = this.lastToken === ''
     this.isDotTriggerCharacter =
@@ -136,20 +132,17 @@ class Completer {
         offset: e.location.start.offset,
       }
     }
-    //console.log("add candidates For incomplete:",this.candidates)
     return this.candidates
   }
 
   addCandidatesForBasicKeyword() {
     createBasicKeywordCandidates().forEach((v) => {
-      //console.log("on complete addCandidatesForBasicKeyword:",v)
       this.addCandidate(v)
     })
   }
 
   addCandidatesForExpectedLiterals(expected: ExpectedLiteralNode[]) {
     createKeywordCandidatesFromExpectedLiterals(expected).forEach((v) => {
-      //console.log("on complete addCandidatesForExpectedLiterals:",v)
       this.addCandidate(v)
     })
   }
@@ -165,7 +158,6 @@ class Completer {
       return
     } else {
       const replaceWords = item.label
-      //console.log("replace words:",replaceWords)
       // lower case
       if (this.lastToken>='a' && this.lastToken<='z') {
          if (replaceWords.indexOf(item.label) > -1) {
@@ -248,6 +240,7 @@ class Completer {
   }
 
   addCandidatesForError(e: ParseError) {
+    console.log("oncomplete addCandidatesForError")
     const expectedLiteralNodes =
       e.expected?.filter(
         (v): v is ExpectedLiteralNode => v.type === 'literal'
@@ -257,10 +250,11 @@ class Completer {
     //this.addCandidatesForCusFunction()
     this.addCandidatesForHqlKeyword()
     //this.addCandidatesForBasicKeyword()
-    //this.addCandidatesForTables(this.schema.tables, false)
+    this.addCandidatesForTables(this.schema.tables, false)
   }
 
   addCandidatesForSelectQuery(e: ParseError, fromNodes: FromTableNode[]) {
+    console.log("oncomplete addCandidatesForSelectQuery")
     const subqueryTables = createTablesFromFromNodes(fromNodes)
     const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     this.addCandidatesForSelectStar(fromNodes, schemaAndSubqueries)
@@ -311,28 +305,35 @@ class Completer {
 
   addCandidatesForParsedSelectQuery(ast: SelectStatement) {
     //this.addCandidatesForBasicKeyword()
+    console.log("oncomplete addCandidatesForParsedSelectQuery")
     console.log("addCandidatesForParsedSelectQuery ast:",ast)
     if (Array.isArray(ast.columns)) {
+      console.log("ast columns")
       this.addCandidate(toCompletionItemForKeyword('FROM'))
       this.addCandidate(toCompletionItemForKeyword('AS'))
     }
-    if (!ast.distinct) {
-      this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
-    }
+    //if (!ast.distinct) {
+    //  this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
+    //}
     const columnRef = findColumnAtPosition(ast, this.pos)
     console.log("addCandidatesForParsedSelectQuery columnRef:",columnRef)
+    //const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     if (!columnRef) {
+      console.log("!columnRef")
       this.addJoinCondidates(ast)
     } else {
       const parsedFromClause = getFromNodesFromClause(this.sql)
       const fromNodes = parsedFromClause?.from?.tables || []
       const subqueryTables = createTablesFromFromNodes(fromNodes)
       const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
+      this.addCandidatesForTables(schemaAndSubqueries, true)
       if (columnRef.table) {
+        console.log("columnRef.table")
         // We know what table/alias this column belongs to
         // Find the corresponding table and suggest it's columns
         this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
       } else {
+        console.log("columnRef.table else")
         // Column is not scoped to a table/alias yet
         // Could be an alias, a talbe or a function
         this.addCandidatesForAliases(fromNodes)
@@ -343,15 +344,9 @@ class Completer {
         //this.addCandidatesForBasicKeyword()
       }
     }
-    //if (logger.isDebugEnabled())
-    //  logger.debug(`parse query returns: ${JSON.stringify(this.candidates)}`)
   }
 
   addCandidatesForParsedStatement(ast: AST) {
-    //if (logger.isDebugEnabled())
-      //logger.debug(
-      //  `getting candidates for parse query ast: ${JSON.stringify(ast)}`
-     // )
     if (!ast.type) {
       this.addCandidatesForBasicKeyword()
     } else if (ast.type === 'delete') {
@@ -422,12 +417,15 @@ class Completer {
 export function complete(
   sql: string,
   pos: Pos,
-  schema: Schema = { tables: [], functions: [] },
+  schema: Schema = {
+    tables: [], functions: [],
+    association: ''
+  },
   jupyterLabMode = false
 ) {
   //if (logger.isDebugEnabled())
   //  logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
   const completer = new Completer(schema, sql, pos, jupyterLabMode)
-  const candidates = completer.complete().slice(0,100)
+  const candidates = completer.complete()
   return { candidates: candidates, error: completer.error }
 }

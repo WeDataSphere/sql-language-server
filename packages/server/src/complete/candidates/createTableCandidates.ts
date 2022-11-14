@@ -14,7 +14,7 @@ function allTableNameCombinations(table: Table): string[] {
   if (table.database) names.push(table.database + '.' + table.tableName)
   if (table.catalog)
     names.push(table.catalog + '.' + table.database + '.' + table.tableName)
-  return [...new Set(names)]
+  return names
 }
 
 export function createTableCandidates(

@@ -31,20 +31,16 @@ import initializeLogging from './initializeLogging'
 import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
 import { syncBody } from './database_libs/CommonUtils'
 import { fileExists, readFile } from '../../sqlint/src/cli/utils'
+import { createCandidatesForColumnsOfAnyTable } from 'sql-language-server'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
 const TRIGGER_CHARATER = '.'
-const insertTable = ''
-//let map_schema={tables: [], functions: [], association: ""}
 let map_schema={}
 let cache_tables=[]
-//let map_association_catch = {tables: [], functions: [], association: ""}
 let map_association_catch = {}
-let map_operate = {}
 
 export const map_colums={}
-//let schema: Schema = { tables: [], functions: [] }
 
 export type ColumsInfo = {
   columnComment: string | null
@@ -73,52 +69,15 @@ export function createServerWithConnection(
   var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
   var linkis_user_session_ticket_id_v1 = dss_cookie.match(regExp_user_ticket_id)||[];
   var ticketId = linkis_user_session_ticket_id_v1[0]
-  console.log("ticketId:",ticketId)
 
-  //absolveCookies(dss_cookie)
-  //console.log("createServerWithConnection cookie:",dss_cookie)
   const logger = log4js.getLogger()
   const documents = new TextDocuments(TextDocument)
   documents.listen(connection)
-  let schema: Schema = { tables: [], functions: [] }
   let hasConfigurationCapability = false
   let rootPath = ''
   let lintConfig: RawConfig | null | undefined
 
-  // Read schema file
-  function readJsonSchemaFile(filePath: string) {
-    if (filePath[0] === '~') {
-      const home = process.env.HOME || ''
-      filePath = path.join(home, filePath.slice(1))
-    }
-
-    logger.info(`loading schema file: ${filePath}`)
-    const data = fs.readFileSync(filePath, 'utf8').replace(/^\ufeff/u, '')
-    try {
-      schema = JSON.parse(data)
-    } catch (e) {
-      const err = e as NodeJS.ErrnoException
-      logger.error('failed to read schema file ' + err.message)
-      connection.sendNotification('sqlLanguageServer.error', {
-        message:
-          'Failed to read schema file: ' + filePath + ' error: ' + err.message,
-      })
-      throw e
-    }
-  }
-
-  function readAndMonitorJsonSchemaFile(filePath: string) {
-    fs.watchFile(filePath, () => {
-      logger.info(`change detected, reloading schema file: ${filePath}`)
-      readJsonSchemaFile(filePath)
-    })
-    // The readJsonSchemaFile function can throw exceptions so
-    // read file only after setting up monitoring
-    readJsonSchemaFile(filePath)
-  }
-
   async function makeDiagnostics(document: TextDocument) {
-    //logger.debug("create server makeDiagnostics textDocument:",document.getText())
     const hasRules =
       !!lintConfig && Object.prototype.hasOwnProperty.call(lintConfig, 'rules')
     const diagnostics = createDiagnostics(
@@ -126,14 +85,11 @@ export function createServerWithConnection(
       document.getText(),
       hasRules ? lintConfig : null
     )
-    //console.log("create server makeDiagnostics diagnostics:",diagnostics)
     connection.sendDiagnostics(diagnostics)
   }
 
-  async function getTableColums(insertTable:string):ColumsInfo[]{
-   //console.log("call function getTableColums...")
+  async function getTableColums(insertTable:string):Promise<ColumsInfo[]>{
    let table_info = insertTable.split(".")
-   //console.log("table_info:",table_info)
    var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1],'GET',dss_cookie);
    if(+body.status===0){
       console.log("call linkis method /api/rest_j/v1/datasource/columns?database="+table_info[0]+'&table='+table_info[1]+"success!")
@@ -148,36 +104,30 @@ export function createServerWithConnection(
     logger.debug(
       `onDidChangeContent: ${params.document.uri}, ${params.document.version}`
     )
-    let docText = params.document.getText()
-    if(docText.includes(";")){
-      let textTrim = docText.trim()
-      let textArray = textTrim.split(";")
-      if(textTrim.endsWith(";")){
-         params.document._content = textArray[textArray.length-2]
-      }else{
-         params.document._content = textArray[textArray.length-1]
-      }
-    }
-    //  if(textArray !== [] && textArray.length > 1){
-    //    if(textTrim.endsWith(";")){
-    //     for(var i=0;i<textArray.length-1;i++){
-    //        params.document._content = textArray[i]
-    //        makeDiagnostics(params.document)
-    //      }
-    //    }else{
-    //      textArray.forEach(item=>{
-    //        params.document._content = item
-    //        makeDiagnostics(params.document)
-    //      });
-    //    }
-    //  }
-    //}else{
-    //  makeDiagnostics(params.document)
-    //}
+    // let docText = params.document.getText()
+    // if(docText.includes(";")){
+    //   let textTrim = docText.trim()
+    //   let textArray = textTrim.split(";")
+    //   if(textTrim.endsWith(";")){
+    //      params.document._content = textArray[textArray.length-2]
+    //   }else{
+    //      params.document._content = textArray[textArray.length-1]
+    //   }
+    // }
+    // const pos = {
+    //   line: params.document._content.split("/n")-1,
+    //   column: params.document._content.length,
+    // }
+    // const candidates = complete(
+    //   params.document._content,
+    //   pos,
+    //   map_schema[ticketId],
+    //   false
+    // ).candidates
+    //return candidates
   })
 
   connection.onInitialize((params): InitializeResult => {
-    //console.log("onInitialize params:",JSON.stringify(params))
     const capabilities = params.capabilities
     // JupyterLab sends didChangeConfiguration information
     // using both the workspace.configuration and
@@ -212,15 +162,11 @@ export function createServerWithConnection(
     try {
          const client = getDatabaseClient()
          console.log("call connection.onInitialized ========>>>>>")
-         //console.log("get schema",JSON.stringify(schema))
-         console.log("user if ticketId:",ticketId)
+         console.log(Object.keys(map_schema))
          if(!Object.keys(map_schema).includes(ticketId)){
-            logger.info("process in call get schema 2")
-            console.log("process in call get schema 2")
             map_schema[ticketId] = await client.getSchema(dss_cookie)
          }
          map_association_catch[ticketId] = map_schema[ticketId]
-       //console.log("connection.onInitialized map_schema[ticketId]:",map_schema[ticketId])
        } catch (e) {
          logger.error('failed to get schema info')
          if (e instanceof RequireSqlite3Error) {
@@ -270,9 +216,6 @@ export function createServerWithConnection(
 
   connection.onCompletion((docParams: CompletionParams): CompletionItem[] => {
     console.log("-----------connection onCompletion-------------")
-    //console.log("map_schema[global.ticketId]:",typeof(map_schema[global.ticketId]))
-    //console.log("map_association_catch[global.ticketId]",map_association_catch[global.ticketId])
-    //console.log("-----------connection onCompletion-------------")
     // Make sure the client does not send use completion request for characters
     // other than the dot which we asked for.
     if (
@@ -282,7 +225,6 @@ export function createServerWithConnection(
         return []
       }
     }
-    //logger.info("createServer onCompletion docParams:",docParams)
     let text = documents.get(docParams.textDocument.uri)?.getText()
     if (!text) {
       return []
@@ -290,55 +232,48 @@ export function createServerWithConnection(
     logger.debug(text || '')
     const pos = {
       line: docParams.position.line,
-      //line: 0,
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
-    //console.log("connection.onCompletion association operate",map_schema[global.ticketId].association)
-    //console.log("map_association_catch:",map_association_catch[global.ticketId])
-    //console.log("not in if map_schema[global.ticketId]:",map_schema[global.ticketId])
     if(typeof(map_schema[ticketId]) === 'undefined' || typeof(map_association_catch[ticketId]) === 'undefined'){
        map_schema[ticketId] = {"tables":[],"functions":[],"association":""}
        map_association_catch[ticketId] = {"tables":[],"functions":[],"association":""}
     }
     if(map_schema[ticketId] && map_schema[ticketId].association === 'close' && Object.keys(map_schema[ticketId].tables).length > 0){
-       //console.log("into close map_schema[global.ticketId]:",map_schema[global.ticketId])
        map_association_catch[ticketId] = map_schema[ticketId]
        map_schema[ticketId] = {tables: [], functions: [],association: "close"}
     }else if(map_schema[ticketId] && map_schema[ticketId].association === 'open' && Object.keys(map_association_catch[ticketId].tables).length > 0){
-       //console.log("into open map_association_catch[global.ticketId]:",map_association_catch[global.ticketId])
        map_schema[ticketId] = map_association_catch[ticketId]
        console.log("into open map_schema[ticketId].association:",map_schema[ticketId].association)
     }
-    //console.log("out of if map_schema[global.ticketId]:",map_schema[global.ticketId],map_schema[global.ticketId].association)
-    //console.log("schema =========",schema)
-    console.log("connection.onCompletion text:",text)
-    //console.log("ticketId:===>",ticketId)
-    //logger.info("connection.onCompletion map_schema[ticketId]",JSON.stringify(map_schema[ticketId]))
-    console.log("pos:",pos)
-    //console.log("text:",text)
-    let textArray = []
-    if(text.includes(";")){
-      let textTrim = text.trim()
-      textArray = textTrim.split(";")
-      if(textTrim.endsWith(";")){
-        console.log("end with ';':",textArray.length)
-        text = textArray[textArray.length-2]
-      }else{
-        console.log("with no :",textArray.length)
-        text = textArray[textArray.length-1]
-      }
-    }
-    console.log("text:",text)
+    // let textArray = []
+    // if(text.includes(";")){
+    //   let textTrim = text.trim()
+    //   textArray = textTrim.split(";")
+    //   if(textTrim.endsWith(";")){
+    //     console.log("end with ';':",textArray.length)
+    //     text = textArray[textArray.length-2]
+    //   }else{
+    //     console.log("with no :",textArray.length)
+    //     text = textArray[textArray.length-1]
+    //   }
+    // }
+    // console.log("text:",text)
     const candidates = complete(
       text,
       pos,
       map_schema[ticketId],
       setting.jupyterLabMode
     ).candidates
-    //console.log('createServer onCompletion returns: ',candidates)
-    //if (logger.isDebugEnabled())
-    //  logger.debug('onCompletion returns: ' + JSON.stringify(candidates))
+
+    let new_candidates: any
+    if(candidates.length > 200){
+      new_candidates = {
+        isIncomplete : true,
+        items : candidates
+      }
+      return new_candidates
+    }
     return candidates
   })
 
@@ -397,7 +332,6 @@ export function createServerWithConnection(
       CodeActionKind.QuickFix
     )
     action.diagnostics = params.context.diagnostics
-    //console.log("on code action diagnostics:",JSON.stringify(action.diagnostics))
     return [action]
   })
 
@@ -410,16 +344,13 @@ export function createServerWithConnection(
            return item
        }
        let colums =  await getTableColums(item.label)
-       console.log(colums)
        map_schema[ticketId].tables.forEach(x=>{
           if(x.database==table_info[0]&&x.tableName==table_info[1]){
              x.columns = colums.columns
           }
        });
-       //map_schema[ticketId] = schema
        cache_tables.push(item.label)
     }
-    //console.log("on completion resolve cache_table functions:",map_schema[global.ticketId].functions)
     return item
   })
 
@@ -513,13 +444,6 @@ export function createServer(
   return createServerWithConnection(connection, params.cookie || '', params.debug)
 }
 
-function absolveCookies(cookie:string){
-  var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
-  var linkis_user_session_ticket_id_v1 = cookie.match(regExp_user_ticket_id)||[];
-  global.ticketId = linkis_user_session_ticket_id_v1[0]
-  console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
-}
-
 //定时任务，定时清理schema缓存
 const timeoutFunc =(config, func) =>{
   console.log("定时任务执行中。。。")
@@ -540,7 +464,7 @@ const timeoutFunc =(config, func) =>{
   recent >= nowTime || (recent += 24 * 3600000)
   setTimeout(() => {
     func()
-    setInterval(func, config.interval * 3600000)
+    setInterval(func, config.interval * 24 * 3600000)
     console.log("===========定时任务执行成功==================")
     console.log("map_schema:",map_schema)
     console.log("cache_tables:",cache_tables)

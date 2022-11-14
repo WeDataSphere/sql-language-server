@@ -42,7 +42,7 @@ export function toCompletionItemForCusFunction(name: string): CompletionItem {
   const item: CompletionItem = {
     label: name,
     kind: ICONS.FUNCTION,
-    detail: 'basicFunction'
+    detail: 'cusFunction'
   }
   return item
 }

@@ -1,24 +1,7 @@
 import { toCompletionItemForCusFunction } from '../CompletionItemUtils'
 
 const CLAUSES: string[] = [
-   'COUNT()',
-   'AVG()',
-   'MAX()',
-   'MIN()',
-   'CONCAT()',
-   'LOWER()',
-   'UPPER()',
-   'SUBSTRING()',
-   'CURDATE()',
-   'CURTIME()',
-   'NOW()',
-   'ABS()',
-   'ROUND()',
-   'LENGTH()',
-   'TRIM()',
-   'REPLACE()',
-   'REPEAT()',
-   'REVERSE()',
+   'TEST_CUS'
 ]
 
 export function createCusFunctionCandidates() {

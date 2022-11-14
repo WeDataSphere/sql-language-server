@@ -1,6 +1,5 @@
 import AbstractClient, { RawField } from './AbstractClient'
 import { dbs } from './AbstractClient'
-import { map_colums } from '../createServer'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 
 export default class MysqlClient extends AbstractClient {
@@ -25,22 +24,14 @@ export default class MysqlClient extends AbstractClient {
   }
 
   getTables(dataBase: string): Promise<string[]> {
-    //console.log("get tables dataBase:",dataBase)
     return new Promise((resolve) => {
-      let macher =dbs.filter(item=>item.databaseName==dataBase);
-      //console.log("gettables macher.tables===>",macher[0].tables)
+      let macher =dbs.filter(item => item.databaseName==dataBase );
       const tables = macher[0].tables.map(x=>x.tableName);
-      //console.log("tables===========>>>>>>>",tables)
       resolve(tables)
-
     })
   }
 
   getColumns(tableName: string): Promise<RawField[]> {
-    //let results1:any[] = [];
-    //results1.push([]);
-    //console.log("getColumns tableName:",tableName)
-    //console.log("*------map_colums--------*",map_colums)
     const results = [
       {
         Field: 'id',
