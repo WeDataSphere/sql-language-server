@@ -26,6 +26,7 @@ import { createBasicKeywordCandidates } from './candidates/createBasicKeywordCan
 import { createCusFunctionCandidates } from './candidates/createCusFunctionCandidates'
 import { createHqlKeywordCandidates } from './candidates/createHqlKeywordCandidates'
 import { createTableCandidates } from './candidates/createTableCandidates'
+import { createDataBaseCandidates } from './candidates/createDataBaseCandidates'
 import { createJoinCondidates } from './candidates/createJoinCandidates'
 import {
   createCandidatesForColumnsOfAnyTable,
@@ -36,6 +37,8 @@ import { createSelectAllColumnsCandidates } from './candidates/createSelectAllCo
 import { createFunctionCandidates } from './candidates/createFunctionCandidates'
 import { createKeywordCandidatesFromExpectedLiterals } from './candidates/createKeywordCandidatesFromExpectedLiterals'
 import { createJoinTablesCandidates } from './candidates/createJoinTableCndidates'
+import { createBaseColumnsCandidates } from './candidates/createBaseColumnsCandidates'
+import { createDefinedGrammarCandidates } from './candidates/createDefinedGrammarCandidates'
 import { ICONS, toCompletionItemForKeyword } from './CompletionItemUtils'
 
 export type Pos = { line: number; column: number }
@@ -193,6 +196,14 @@ class Completer {
     )
   }
 
+  addCandidatesForDbs(tables: Table[], onFromClause: boolean) {
+    createDataBaseCandidates(tables, this.lastToken, onFromClause).forEach(
+      (item) => {
+        this.addCandidate(item)
+      }
+    )
+  }
+
   addCandidatesForColumnsOfAnyTable(tables: Table[]) {
     createCandidatesForColumnsOfAnyTable(tables, this.lastToken).forEach(
       (item) => {
@@ -248,8 +259,11 @@ class Completer {
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForFunctions()
     //this.addCandidatesForCusFunction()
+    this.addDefinedGrammarCandidates()
     this.addCandidatesForHqlKeyword()
-    //this.addCandidatesForBasicKeyword()
+    this.addBaseColumnsCandidates()
+    this.addCandidatesForBasicKeyword()
+    this.addCandidatesForDbs(this.schema.tables, false)
     this.addCandidatesForTables(this.schema.tables, false)
   }
 
@@ -291,6 +305,7 @@ class Completer {
 
   addCandidatesForParsedDeleteStatement(ast: DeleteStatement) {
     if (isPosInLocation(ast.table.location, this.pos)) {
+      this.addCandidatesForDbs(this.schema.tables, false)
       this.addCandidatesForTables(this.schema.tables, false)
     } else if (
       ast.where &&
@@ -304,7 +319,7 @@ class Completer {
   }
 
   addCandidatesForParsedSelectQuery(ast: SelectStatement) {
-    //this.addCandidatesForBasicKeyword()
+    this.addCandidatesForBasicKeyword()
     console.log("oncomplete addCandidatesForParsedSelectQuery")
     console.log("addCandidatesForParsedSelectQuery ast:",ast)
     if (Array.isArray(ast.columns)) {
@@ -326,6 +341,7 @@ class Completer {
       const fromNodes = parsedFromClause?.from?.tables || []
       const subqueryTables = createTablesFromFromNodes(fromNodes)
       const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
+      this.addCandidatesForDbs(this.schema.tables, false)
       this.addCandidatesForTables(schemaAndSubqueries, true)
       if (columnRef.table) {
         console.log("columnRef.table")
@@ -340,7 +356,10 @@ class Completer {
         //this.addCandidatesForTables(schemaAndSubqueries, true)
         this.addCandidatesForFunctions()
         //this.addCandidatesForCusFunction()
+        this.addBaseColumnsCandidates()
+        this.addDefinedGrammarCandidates()
         this.addCandidatesForHqlKeyword()
+        //this.addBaseColumnsCandidates()
         //this.addCandidatesForBasicKeyword()
       }
     }
@@ -391,8 +410,27 @@ class Completer {
     )
   }
 
+  //关键字
   addCandidatesForHqlKeyword() {
     createHqlKeywordCandidates().forEach(
+      (v) => {
+        this.addCandidate(v)
+      }
+    )
+  }
+
+  //常用字段（select关键字后提示）
+  addBaseColumnsCandidates() {
+    createBaseColumnsCandidates().forEach(
+      (v) => {
+        this.addCandidate(v)
+      }
+    )
+  }
+
+  //自定义语法结构（开始输入时提示）
+  addDefinedGrammarCandidates() {
+    createDefinedGrammarCandidates().forEach(
       (v) => {
         this.addCandidate(v)
       }

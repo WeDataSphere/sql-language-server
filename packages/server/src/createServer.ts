@@ -31,16 +31,24 @@ import initializeLogging from './initializeLogging'
 import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
 import { syncBody } from './database_libs/CommonUtils'
 import { fileExists, readFile } from '../../sqlint/src/cli/utils'
-import { createCandidatesForColumnsOfAnyTable } from 'sql-language-server'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
 const TRIGGER_CHARATER = '.'
+const insertTable = ''
+//let map_schema={tables: [], functions: [], association: ""}
 let map_schema={}
 let cache_tables=[]
+let set_tables = new Set()
+//let map_association_catch = {tables: [], functions: [], association: ""}
 let map_association_catch = {}
+let map_operate = {}
+
+const envConfig = require("../../../env.json")
+Object.assign(process.env,envConfig)
 
 export const map_colums={}
+//let schema: Schema = { tables: [], functions: [] , association: ""}
 
 export type ColumsInfo = {
   columnComment: string | null
@@ -69,15 +77,52 @@ export function createServerWithConnection(
   var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
   var linkis_user_session_ticket_id_v1 = dss_cookie.match(regExp_user_ticket_id)||[];
   var ticketId = linkis_user_session_ticket_id_v1[0]
+  console.log("ticketId:",ticketId)
 
+  //absolveCookies(dss_cookie)
+  //console.log("createServerWithConnection cookie:",dss_cookie)
   const logger = log4js.getLogger()
   const documents = new TextDocuments(TextDocument)
   documents.listen(connection)
+  let schema: Schema = { tables: [], functions: [] }
   let hasConfigurationCapability = false
   let rootPath = ''
   let lintConfig: RawConfig | null | undefined
 
+  // Read schema file
+  function readJsonSchemaFile(filePath: string) {
+    if (filePath[0] === '~') {
+      const home = process.env.HOME || ''
+      filePath = path.join(home, filePath.slice(1))
+    }
+
+    logger.info(`loading schema file: ${filePath}`)
+    const data = fs.readFileSync(filePath, 'utf8').replace(/^\ufeff/u, '')
+    try {
+      schema = JSON.parse(data)
+    } catch (e) {
+      const err = e as NodeJS.ErrnoException
+      logger.error('failed to read schema file ' + err.message)
+      connection.sendNotification('sqlLanguageServer.error', {
+        message:
+          'Failed to read schema file: ' + filePath + ' error: ' + err.message,
+      })
+      throw e
+    }
+  }
+
+  function readAndMonitorJsonSchemaFile(filePath: string) {
+    fs.watchFile(filePath, () => {
+      logger.info(`change detected, reloading schema file: ${filePath}`)
+      readJsonSchemaFile(filePath)
+    })
+    // The readJsonSchemaFile function can throw exceptions so
+    // read file only after setting up monitoring
+    readJsonSchemaFile(filePath)
+  }
+
   async function makeDiagnostics(document: TextDocument) {
+    //logger.debug("create server makeDiagnostics textDocument:",document.getText())
     const hasRules =
       !!lintConfig && Object.prototype.hasOwnProperty.call(lintConfig, 'rules')
     const diagnostics = createDiagnostics(
@@ -85,12 +130,15 @@ export function createServerWithConnection(
       document.getText(),
       hasRules ? lintConfig : null
     )
+    //console.log("create server makeDiagnostics diagnostics:",diagnostics)
     connection.sendDiagnostics(diagnostics)
   }
 
-  async function getTableColums(insertTable:string):Promise<ColumsInfo[]>{
+  async function getTableColums(insertTable:string):ColumsInfo[]{
+   console.log("call function getTableColums...")
    let table_info = insertTable.split(".")
-   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1],'GET',dss_cookie);
+   //console.log("table_info:",table_info)
+   var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1],'GET',dss_cookie);
    if(+body.status===0){
       console.log("call linkis method /api/rest_j/v1/datasource/columns?database="+table_info[0]+'&table='+table_info[1]+"success!")
    }else{
@@ -104,30 +152,21 @@ export function createServerWithConnection(
     logger.debug(
       `onDidChangeContent: ${params.document.uri}, ${params.document.version}`
     )
-    // let docText = params.document.getText()
-    // if(docText.includes(";")){
-    //   let textTrim = docText.trim()
-    //   let textArray = textTrim.split(";")
-    //   if(textTrim.endsWith(";")){
-    //      params.document._content = textArray[textArray.length-2]
-    //   }else{
-    //      params.document._content = textArray[textArray.length-1]
-    //   }
-    // }
-    // const pos = {
-    //   line: params.document._content.split("/n")-1,
-    //   column: params.document._content.length,
-    // }
-    // const candidates = complete(
-    //   params.document._content,
-    //   pos,
-    //   map_schema[ticketId],
-    //   false
-    // ).candidates
-    //return candidates
+    //let docText = params.document.getText()
+    //if(docText.includes(";")){
+    //  let textTrim = docText.trim()
+    //  let textArray = textTrim.split(";")
+    //  if(textTrim.endsWith(";")){
+    //     params.document._content = textArray[textArray.length-2]
+    //  }else{
+    //     params.document._content = textArray[textArray.length-1]
+    //  }
+    //}
+    makeDiagnostics(params.document)
   })
 
   connection.onInitialize((params): InitializeResult => {
+    //console.log("onInitialize params:",JSON.stringify(params))
     const capabilities = params.capabilities
     // JupyterLab sends didChangeConfiguration information
     // using both the workspace.configuration and
@@ -162,8 +201,12 @@ export function createServerWithConnection(
     try {
          const client = getDatabaseClient()
          console.log("call connection.onInitialized ========>>>>>")
-         console.log(Object.keys(map_schema))
+         //console.log("get schema",JSON.stringify(schema))
+         console.log("user if ticketId:",ticketId)
+         console.log("connection.onInitialized map_schema:",Object.keys(map_schema))
          if(!Object.keys(map_schema).includes(ticketId)){
+            logger.info("process in call get schema")
+            console.log("process in call get schema")
             map_schema[ticketId] = await client.getSchema(dss_cookie)
          }
          map_association_catch[ticketId] = map_schema[ticketId]
@@ -216,8 +259,6 @@ export function createServerWithConnection(
 
   connection.onCompletion((docParams: CompletionParams): CompletionItem[] => {
     console.log("-----------connection onCompletion-------------")
-    // Make sure the client does not send use completion request for characters
-    // other than the dot which we asked for.
     if (
       docParams.context?.triggerKind == CompletionTriggerKind.TriggerCharacter
     ) {
@@ -225,6 +266,7 @@ export function createServerWithConnection(
         return []
       }
     }
+    //logger.info("createServer onCompletion docParams:",docParams)
     let text = documents.get(docParams.textDocument.uri)?.getText()
     if (!text) {
       return []
@@ -232,6 +274,7 @@ export function createServerWithConnection(
     logger.debug(text || '')
     const pos = {
       line: docParams.position.line,
+      //line: 0,
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
@@ -239,42 +282,49 @@ export function createServerWithConnection(
        map_schema[ticketId] = {"tables":[],"functions":[],"association":""}
        map_association_catch[ticketId] = {"tables":[],"functions":[],"association":""}
     }
+    //console.log(map_schema[ticketId])
     if(map_schema[ticketId] && map_schema[ticketId].association === 'close' && Object.keys(map_schema[ticketId].tables).length > 0){
+       //console.log("into close map_schema[global.ticketId]:",map_schema[global.ticketId])
        map_association_catch[ticketId] = map_schema[ticketId]
        map_schema[ticketId] = {tables: [], functions: [],association: "close"}
     }else if(map_schema[ticketId] && map_schema[ticketId].association === 'open' && Object.keys(map_association_catch[ticketId].tables).length > 0){
+       //console.log("into open map_association_catch[global.ticketId]:",map_association_catch[global.ticketId])
        map_schema[ticketId] = map_association_catch[ticketId]
        console.log("into open map_schema[ticketId].association:",map_schema[ticketId].association)
     }
-    // let textArray = []
-    // if(text.includes(";")){
-    //   let textTrim = text.trim()
-    //   textArray = textTrim.split(";")
-    //   if(textTrim.endsWith(";")){
-    //     console.log("end with ';':",textArray.length)
-    //     text = textArray[textArray.length-2]
-    //   }else{
-    //     console.log("with no :",textArray.length)
-    //     text = textArray[textArray.length-1]
-    //   }
-    // }
-    // console.log("text:",text)
+    //console.log("out of if map_schema[global.ticketId]:",map_schema[global.ticketId],map_schema[global.ticketId].association)
+    //console.log("schema =========",schema)
+     let textArray = []
+     if(text.includes(";")){
+       let textTrim = text.trim()
+       textArray = textTrim.split(";")
+       if(textTrim.endsWith(";")){
+         console.log("end with ';':",textArray.length)
+         text = textArray[textArray.length-2]
+       }else{
+         console.log("with no :",textArray.length)
+         text = textArray[textArray.length-1]
+       }
+    }
+    console.log("connection.onCompletion text:",text)
+ 
     const candidates = complete(
       text,
       pos,
       map_schema[ticketId],
       setting.jupyterLabMode
     ).candidates
-
-    let new_candidates: any
-    if(candidates.length > 200){
-      new_candidates = {
-        isIncomplete : true,
-        items : candidates
-      }
-      return new_candidates
-    }
-    return candidates
+   //candidates.sort(objectArraySort('detail'))
+   //console.log(candidates) 
+   let new_candidates
+   if(candidates.length > 200){
+     new_candidates = {
+       isIncomplete : true,
+       items : candidates.slice(0,200)
+     }
+     return new_candidates
+   }
+   return candidates
   })
 
   connection.onCodeAction((params) => {
@@ -332,25 +382,34 @@ export function createServerWithConnection(
       CodeActionKind.QuickFix
     )
     action.diagnostics = params.context.diagnostics
+    //console.log("on code action diagnostics:",JSON.stringify(action.diagnostics))
     return [action]
   })
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
-    //console.log("on completion resolve item:",item)
-    if(item.label.indexOf(TRIGGER_CHARATER) != -1){
+    console.log("on completion resolve item:",item)
+    console.log("item.label.indexOf(TRIGGER_CHARATER) != -1",item.label.indexOf(TRIGGER_CHARATER) != -1)
+    if(item.label.indexOf(TRIGGER_CHARATER) != -1 && item.label.trim().substr(-1) !== TRIGGER_CHARATER){
+       //console.log("item.label",item.label)
        let table_info = item.label.split(".")
-       console.log("cache_table.includes(item.label)",cache_tables.includes(item.label),item.label)
-       if(cache_tables.includes(item.label)){
+       //console.log("cache_tables[ticketId]",cache_tables[ticketId],item.label)
+       if(cache_tables[ticketId] === void 0) cache_tables[ticketId] = []
+       console.log("cache_tables[ticketId]",cache_tables[ticketId],item.label)
+       if(cache_tables[ticketId].includes(item.label)){
            return item
        }
        let colums =  await getTableColums(item.label)
+       //console.log(colums)
        map_schema[ticketId].tables.forEach(x=>{
           if(x.database==table_info[0]&&x.tableName==table_info[1]){
              x.columns = colums.columns
           }
        });
-       cache_tables.push(item.label)
+       //set_tables.add(item.label)
+       cache_tables[ticketId].push(item.label)
+       cache_tables[ticketId] = [...new Set(cache_tables[ticketId])]
     }
+    //console.log("on completion resolve cache_table functions:",map_schema[global.ticketId].functions)
     return item
   })
 
@@ -444,27 +503,45 @@ export function createServer(
   return createServerWithConnection(connection, params.cookie || '', params.debug)
 }
 
+function objectArraySort(keyName:string) {
+  return function (objectN, objectM) {
+    var valueN = objectN[keyName]
+    var valueM = objectM[keyName]
+    if (valueN > valueM) return 1
+    else if (valueN < valueM) return -1
+    else return 0
+  }
+}
+
+function absolveCookies(cookie:string){
+  var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
+  var linkis_user_session_ticket_id_v1 = cookie.match(regExp_user_ticket_id)||[];
+  global.ticketId = linkis_user_session_ticket_id_v1[0]
+  console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
+}
+
 //定时任务，定时清理schema缓存
 const timeoutFunc =(config, func) =>{
   console.log("定时任务执行中。。。")
-  let filePath = path.join(path.resolve(__dirname, '../../../'), 'timing.json')
-  console.log("配置文件路径：",filePath)
-  if(fileExists(filePath)){
-    const fileContent = readFile(filePath)
-    let timingconfig: TimingConfig
-    timingconfig = JSON.parse(fileContent)
-    config = timingconfig
-    console.log("配置文件存在，读取配置文件配置信息：",config)
-  }else{
-    console.log("配置文件不存在,加载默认配置:",config)
-  }
+  //let filePath = path.join(path.resolve(__dirname, '../../../'), 'timing.json')
+  //console.log("配置文件路径：",filePath)
+  //if(fileExists(filePath)){
+  //  const fileContent = readFile(filePath)
+  //  let timingconfig: TimingConfig
+  //  timingconfig = JSON.parse(fileContent)
+  //  config = timingconfig
+  //  console.log("配置文件存在，读取配置文件配置信息：",config)
+  //}else{
+  //  console.log("配置文件不存在,加载默认配置:",config)
+  //}
   const nowTime = new Date().getTime()
-  const timePoints = config.time.split(':').map(i => parseInt(i))
+  const timePoints = process.env.timing_time.split(':').map(i => parseInt(i))
   let recent = new Date().setHours(...timePoints)
   recent >= nowTime || (recent += 24 * 3600000)
+  console.log("recent - nowTime:",recent - nowTime)
   setTimeout(() => {
     func()
-    setInterval(func, config.interval * 24 * 3600000)
+    setInterval(func, process.env.timing_interval * 3600000 * 24)
     console.log("===========定时任务执行成功==================")
     console.log("map_schema:",map_schema)
     console.log("cache_tables:",cache_tables)
@@ -475,4 +552,6 @@ const timeoutFunc =(config, func) =>{
 timeoutFunc(config,()=>{
   map_schema = {}
   cache_tables=[]
+  //set_tables.clear()  
 })
+

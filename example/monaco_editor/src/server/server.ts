@@ -6,6 +6,8 @@ import url from "url";
 import type rpc from "vscode-ws-jsonrpc";
 import { launchServer } from "./launchServer";
 
+const envConfig = require("../../../../env.json")
+Object.assign(process.env,envConfig)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 process.setMaxListeners(0)
 process.on("uncaughtException", function (err: any) {
@@ -39,8 +41,8 @@ function startServer() {
           let dss_cookie='';
           if(request.headers.cookie != undefined){
             dss_cookie = request.headers.cookie
-            cookieArry[dss_cookie] = webSocket
-            webSockets = cookieArry[dss_cookie]
+            cookieArry[dss_cookie] = webSocket  
+            webSockets = cookieArry[dss_cookie]  
           }
           const socket: rpc.IWebSocket = {
             send: (content: any) =>

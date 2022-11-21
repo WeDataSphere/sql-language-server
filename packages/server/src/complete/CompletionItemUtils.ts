@@ -8,6 +8,17 @@ export const ICONS = {
   FUNCTION: CompletionItemKind.Property,
   ALIAS: CompletionItemKind.Variable,
   UTILITY: CompletionItemKind.Event,
+  DATABASE: CompletionItemKind.Constructor,
+}
+
+export function toCompletionItemForDb(f: DbFunction): CompletionItem {
+  const item: CompletionItem = {
+    label: f.name,
+    detail: 'db',
+    kind: ICONS.DATABASE,
+    documentation: f.description,
+  }
+  return item
 }
 
 export function toCompletionItemForFunction(f: DbFunction): CompletionItem {

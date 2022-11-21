@@ -8,6 +8,7 @@ export const ICONS = {
   FUNCTION: CompletionItemKind.Property,
   ALIAS: CompletionItemKind.Variable,
   UTILITY: CompletionItemKind.Event,
+  DATABASE: CompletionItemKind.Constructor,
 }
 
 type OnClause = 'FROM' | 'ALTER TABLE' | 'OTHERS'
@@ -55,6 +56,14 @@ export class Identifier {
       }
       tableAlias = this.onClause === 'FROM' ? makeTableAlias(tableName) : ''
       kindName = 'table'
+    } else if(this.kind === ICONS.DATABASE) {
+      let tableName = label
+      const i = tableName.lastIndexOf('.')
+      if (i > 0) {
+        tableName = label.substring(i + 1)
+      }
+      tableAlias = this.onClause === 'FROM' ? makeTableAlias(tableName) : ''
+      kindName = 'db'
     } else {
       kindName = 'column'
     }
@@ -67,7 +76,7 @@ export class Identifier {
 
     if (this.kind === ICONS.TABLE) {
       if (tableAlias) {
-        item.insertText = `${label} AS ${tableAlias}`
+        item.insertText = `${label} as ${tableAlias}`
       } else {
         item.insertText = label
       }

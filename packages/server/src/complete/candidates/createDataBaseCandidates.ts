@@ -9,29 +9,26 @@ import { ICONS } from '../CompletionItemUtils'
  * @param table
  * @returns
  */
-function allTableNameCombinations(table: Table): string[] {
-  const names = [table.tableName]
-  if (table.database) names.push(table.database + '.' + table.tableName)
-  if (table.catalog)
-    names.push(table.catalog + '.' + table.database + '.' + table.tableName)
-  return names
+function allDataBaseCombinations(table: Table): string[] {
+  return [table.database]
 }
 
-export function createTableCandidates(
+export function createDataBaseCandidates(
   tables: Table[],
   lastToken: string,
   onFromClause?: boolean
 ) {
-  var tableNames = new Set()
-  let tableArry = tables.flatMap((table) => allTableNameCombinations(table))
-  tableArry.map(tableName => tableNames.add(tableName))
-  return Array.from(tableNames)
+  var dataBaseNames = new Set()
+  let databases = tables.flatMap((table) => allDataBaseCombinations(table))
+  databases.map(database => dataBaseNames.add(database))
+  console.log("dataBaseNames:",dataBaseNames)
+  return Array.from(dataBaseNames)
     .map((aTableNameVariant) => {
       return new Identifier(
         lastToken,
         aTableNameVariant,
         '',
-        ICONS.TABLE,
+        ICONS.DATABASE,
         onFromClause ? 'FROM' : 'OTHERS'
       )
     })

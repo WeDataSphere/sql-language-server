@@ -1,30 +1,32 @@
+import { readFileSync } from 'fs'
 import log4js from 'log4js'
+import { SSHConnection } from 'node-ssh-forward'
 import { Connection } from '../SettingStore'
 import { syncBody } from './CommonUtils'
 
 const logger = log4js.getLogger()
-export let dbs = []
+export const dbs = []
 
-async function getAllDatabases(ticketId:string):Promise<string[]>{
-  var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/all','GET',ticketId);
+async function getAllDatabases(ticketId:string):string[]{
+  var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/all','GET',ticketId);
   if(+body.status===0){
     console.log(ticketId +":"+"request /api/rest_j/v1/datasource/all success!")
   }else{
     console.log(ticketId +":"+"/api/rest_j/v1/datasource/all linkis call error:",body.message)
-    return [];
+    return;
   }
   const result = body.data.dbs 
   dbs = result
   return result;
 }
 
-async function getUdfAll(ticketId:string):Promise<string[]>{
-   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/udf/all','POST',ticketId);
+async function getUdfAll(ticketId:string):string[]{
+   var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/udf/all','POST',ticketId);
    if(+body.status===0){
     console.log(ticketId +":"+ "request /api/rest_j/v1/udf/all success!")
   }else{
     console.log(ticketId +":"+"/api/rest_j/v1/udf/all linkis call error:",body.message)
-    return [];
+    return;
   }
   const udfInfos = body.data.udfTree.udfInfos
   return udfInfos
@@ -73,15 +75,17 @@ export default abstract class AbstractClient {
 
   async getSchema(ticketId:string): Promise<Schema> {
     const schema: Schema = { tables: [], functions: [] , association: ""}
+    let functions = []
     try {
       console.log("================get udf ===================")
       let udfs = await getUdfAll(ticketId)
       if(typeof(udfs)=="undefined") return schema;
       let udfArray = Array.from(udfs)
-      schema.functions  = udfArray.map(udf=>({
+      functions = udfArray.map(udf=>({
          name: udf.udfName+"()",
          description: udf.udfName+"()"
       }));
+      schema.functions = functions
       console.log("================get all databases ===================")
       let result = await getAllDatabases(ticketId)
       if(typeof(result)=="undefined"){
@@ -103,6 +107,7 @@ export default abstract class AbstractClient {
               database: datasourceConfig,
               tableName: v,
               columns: null,
+              //columns: columns.map((v:any) => this.toColumnFromRawField(v)),
             }))
           )
         )
