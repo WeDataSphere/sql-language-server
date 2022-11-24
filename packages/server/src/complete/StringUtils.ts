@@ -27,6 +27,7 @@ export function makeTableName(table: Table): string {
 }
 
 export function getAliasFromFromTableNode(node: FromTableNode): string {
+  console.log("stringutil getAliasFromFromTableNode:",node)
   if (node.as) {
     return node.as
   }

@@ -140,11 +140,13 @@ export function getNearestFromTableFromPos(
   fromNodes: FromTableNode[],
   pos: Pos
 ): FromTableNode | null {
+  console.log("getNearestFromTableFromPos fromNodes:",fromNodes)
+  console.log("getNearestFromTableFromPos pos:",pos)
   return (
     fromNodes
       .reverse()
       .filter((tableNode) => isPosInLocation(tableNode.location, pos))
-      .shift() ?? null
+      //.shift() ?? null
   )
 }
 

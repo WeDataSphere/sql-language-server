@@ -8,6 +8,18 @@ export const ICONS = {
   FUNCTION: CompletionItemKind.Property,
   ALIAS: CompletionItemKind.Variable,
   UTILITY: CompletionItemKind.Event,
+  DATABASE: CompletionItemKind.Constructor,
+  DBTABLE: CompletionItemKind.Unit,
+}
+
+export function toCompletionItemForDb(f: DbFunction): CompletionItem {
+  const item: CompletionItem = {
+    label: f.name,
+    detail: 'db',
+    kind: ICONS.DATABASE,
+    documentation: f.description,
+  }
+  return item
 }
 
 export function toCompletionItemForFunction(f: DbFunction): CompletionItem {
@@ -43,6 +55,16 @@ export function toCompletionItemForCusFunction(name: string): CompletionItem {
     label: name,
     kind: ICONS.FUNCTION,
     detail: 'cusFunction'
+  }
+  return item
+}
+
+export function toCompletionItemForHqlKeyword(name: string, detail:string, documentation:string): CompletionItem {
+  const item: CompletionItem = {
+    label: name,
+    kind: ICONS.KEYWORD,
+    detail: detail,
+    documentation: documentation
   }
   return item
 }

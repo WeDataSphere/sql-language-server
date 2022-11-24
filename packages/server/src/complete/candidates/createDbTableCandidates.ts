@@ -9,32 +9,28 @@ import { ICONS } from '../CompletionItemUtils'
  * @param table
  * @returns
  */
-function allTableNameCombinations(table: Table): string[] {
-  const names = [table.tableName]
-  //if (table.database) names.push(table.database + '.' + table.tableName)
-  if (table.catalog)
-    names.push(table.catalog + '.' + table.database + '.' + table.tableName)
-  return names
+function allDbTableCombinations(table: Table): string[] {
+  return [table.database + '.' + table.tableName]
 }
 
-export function createTableCandidates(
+export function createDbTableCandidates(
   tables: Table[],
   lastToken: string,
   onFromClause?: boolean
 ) {
-  var tableNames = new Set()
-  let tableArry = tables.flatMap((table) => allTableNameCombinations(table))
-  tableArry.map(tableName => tableNames.add(tableName))
-  return Array.from(tableNames)
+  console.log("into method createDbTableCandidates")
+  // console.log("createDbTableCandidates:",allDbTableCombinations(table))
+  return tables.flatMap((table) => allDbTableCombinations(table))
     .map((aTableNameVariant) => {
       return new Identifier(
         lastToken,
         aTableNameVariant,
         '',
-        ICONS.TABLE,
+        ICONS.DBTABLE,
         onFromClause ? 'FROM' : 'OTHERS'
       )
     })
     .filter((item) => item.matchesLastToken())
     .map((item) => item.toCompletionItem())
 }
+

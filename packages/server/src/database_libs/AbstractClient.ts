@@ -8,11 +8,11 @@ const logger = log4js.getLogger()
 export const dbs = []
 
 async function getAllDatabases(ticketId:string):string[]{
-  var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/datasource/all','GET',ticketId);
+  var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/all','GET',ticketId);
   if(+body.status===0){
-    console.log("request /api/rest_j/v1/datasource/all success!")
+    console.log(ticketId +":"+"request /api/rest_j/v1/datasource/all success!")
   }else{
-    console.log("/api/rest_j/v1/datasource/all linkis call error:",body.message)
+    console.log(ticketId +":"+"/api/rest_j/v1/datasource/all linkis call error:",body.message)
     return;
   }
   const result = body.data.dbs 
@@ -21,11 +21,11 @@ async function getAllDatabases(ticketId:string):string[]{
 }
 
 async function getUdfAll(ticketId:string):string[]{
-   var body = await syncBody('http://127.0.0.1:8088/api/rest_j/v1/udf/all','POST',ticketId);
+   var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/udf/all','POST',ticketId);
    if(+body.status===0){
-    console.log("request /api/rest_j/v1/udf/all success!")
+    console.log(ticketId +":"+ "request /api/rest_j/v1/udf/all success!")
   }else{
-    console.log("/api/rest_j/v1/udf/all linkis call error:",body.message)
+    console.log(ticketId +":"+"/api/rest_j/v1/udf/all linkis call error:",body.message)
     return;
   }
   const udfInfos = body.data.udfTree.udfInfos
@@ -96,7 +96,7 @@ export default abstract class AbstractClient {
       dbsArray.map(item=>{
          databaseArry.push(item.databaseName)
       })
-      console.log("get schema:",ticketId,databaseArry.length)
+      console.log("载入数据库数量:",databaseArry.length)
       let array_schema=new Array() 
       for(var datasourceConfig of databaseArry){
         const tables = await this.getTables(datasourceConfig)
@@ -114,6 +114,7 @@ export default abstract class AbstractClient {
     array_schema.push(schema.tables)
     }
     schema.tables = array_schema.flat(Infinity)
+    console.log("载入表数量：",schema.tables.length)
     } catch (e) {
       logger.error(e)
       throw e

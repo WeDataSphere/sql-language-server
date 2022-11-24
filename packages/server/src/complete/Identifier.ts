@@ -8,6 +8,8 @@ export const ICONS = {
   FUNCTION: CompletionItemKind.Property,
   ALIAS: CompletionItemKind.Variable,
   UTILITY: CompletionItemKind.Event,
+  DATABASE: CompletionItemKind.Constructor,
+  DBTABLE: CompletionItemKind.Unit,
 }
 
 type OnClause = 'FROM' | 'ALTER TABLE' | 'OTHERS'
@@ -45,29 +47,40 @@ export class Identifier {
   toCompletionItem(): CompletionItem {
     const idx = this.lastToken.lastIndexOf('.')
     const label = this.identifier.substring(idx + 1)
-    let kindName: string
+    let kindName: ''
     let tableAlias = ''
-    if (this.kind === ICONS.TABLE) {
+    let sortText = ''
+    if (this.kind === ICONS.TABLE || this.kind === ICONS.DATABASE || this.kind === ICONS.DBTABLE){
       let tableName = label
       const i = tableName.lastIndexOf('.')
       if (i > 0) {
         tableName = label.substring(i + 1)
       }
-      tableAlias = this.onClause === 'FROM' ? makeTableAlias(tableName) : ''
-      kindName = 'table'
-    } else {
-      kindName = 'column'
+      tableAlias = this.onClause === 'FROM' ? makeTableAlias(tableName) : '' 
+      if (this.kind === ICONS.TABLE) {
+        kindName = 'table'
+        sortText = 'c'
+      } else if(this.kind === ICONS.DATABASE) {
+        kindName = 'db'
+        sortText = 'a'
+      } else if(this.kind === ICONS.DBTABLE) {
+        kindName = 'db.table'
+        sortText = 'b'
+      } else {
+        kindName = 'column'
+      }
     }
 
     const item: CompletionItem = {
       label: label,
       detail: `${kindName} ${this.detail}`,
       kind: this.kind,
+      sortText: sortText,
     }
 
     if (this.kind === ICONS.TABLE) {
       if (tableAlias) {
-        item.insertText = `${label} AS ${tableAlias}`
+        item.insertText = `${label} as ${tableAlias}`
       } else {
         item.insertText = label
       }
