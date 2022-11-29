@@ -92,12 +92,12 @@ class Completer {
     try {
       const ast = parse(target)
       logger.debug("after parse target:",ast)
-      console.log("after parse target:",ast)
+      //console.log("after parse target:",ast)
       this.addCandidatesForParsedStatement(ast)
     } catch (_e: unknown) {
       logger.debug('error')
       logger.debug(_e)
-      console.log("error",_e)
+      //console.log("error",_e)
       if (!(_e instanceof Error)) {
         throw _e
       }
@@ -106,6 +106,7 @@ class Completer {
       }
       const e = _e as ParseError
       const parsedFromClause = getFromNodesFromClause(this.sql)
+      //console.log("e.message:",e.message)
       if (parsedFromClause) {
         const fromNodes = getAllNestedFromNodes(
           parsedFromClause?.from?.tables || []
@@ -125,7 +126,9 @@ class Completer {
             ) || []
           this.addCandidatesForJoins(expectedLiteralNodes, fromNodes)
         }
-      } else if (e.message === 'EXPECTED COLUMN NAME') {
+      } else if (this.sql.trim().toLowerCase().startsWith('insert into')){
+      // else if (e.message === 'EXPECTED COLUMN NAME') {
+        //console.log("for insert")
         this.addCandidatesForInsert()
       } else if (this.sql.trim().toLowerCase().startsWith('use')){
         this.addCandidatesForDbs(this.schema.tables, false)
@@ -258,11 +261,13 @@ class Completer {
    * INSERT INTO TABLE1 (C
    */
   addCandidatesForInsert() {
-    this.addCandidatesForColumnsOfAnyTable(this.schema.tables)
+    //this.addCandidatesForColumnsOfAnyTable(this.schema.tables)
+    this.addCandidatesForDbTables(this.schema.tables, false)
+    this.addCandidatesForTables(this.schema.tables, false)
   }
 
   addCandidatesForError(e: ParseError) {
-    console.log("oncomplete addCandidatesForError")
+    //console.log("oncomplete addCandidatesForError")
     const expectedLiteralNodes =
       e.expected?.filter(
         (v): v is ExpectedLiteralNode => v.type === 'literal'
@@ -281,7 +286,7 @@ class Completer {
   }
 
   addCandidatesForSelectQuery(e: ParseError, fromNodes: FromTableNode[]) {
-    console.log("oncomplete addCandidatesForSelectQuery")
+    //console.log("oncomplete addCandidatesForSelectQuery")
     const subqueryTables = createTablesFromFromNodes(fromNodes)
     const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     this.addCandidatesForSelectStar(fromNodes, schemaAndSubqueries)
@@ -335,10 +340,10 @@ class Completer {
 
   addCandidatesForParsedSelectQuery(ast: SelectStatement) {
     //this.addCandidatesForBasicKeyword()
-    console.log("oncomplete addCandidatesForParsedSelectQuery")
-    console.log("addCandidatesForParsedSelectQuery ast:",ast)
+    //console.log("oncomplete addCandidatesForParsedSelectQuery")
+    //console.log("addCandidatesForParsedSelectQuery ast:",ast)
     if (Array.isArray(ast.columns)) {
-      console.log("ast columns")
+      //console.log("ast columns")
       this.addCandidate(toCompletionItemForKeyword('FROM'))
       this.addCandidate(toCompletionItemForKeyword('AS'))
     }
@@ -346,10 +351,10 @@ class Completer {
     //  this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
     //}
     const columnRef = findColumnAtPosition(ast, this.pos)
-    console.log("addCandidatesForParsedSelectQuery columnRef:",columnRef)
+    //console.log("addCandidatesForParsedSelectQuery columnRef:",columnRef)
     //const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     if (!columnRef) {
-      console.log("!columnRef")
+      //console.log("!columnRef")
       this.addJoinCondidates(ast)
     } else {
       const parsedFromClause = getFromNodesFromClause(this.sql)
@@ -357,12 +362,12 @@ class Completer {
       const subqueryTables = createTablesFromFromNodes(fromNodes)
       const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
       if (columnRef.table) {
-        console.log("columnRef.table")
+        //console.log("columnRef.table")
         // We know what table/alias this column belongs to
         // Find the corresponding table and suggest it's columns
         this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
       } else {
-        console.log("columnRef.table else")
+        //console.log("columnRef.table else")
         // Column is not scoped to a table/alias yet
         // Could be an alias, a talbe or a function
         this.addCandidatesForAliases(fromNodes)
@@ -383,7 +388,7 @@ class Completer {
     } else if (ast.type === 'select') {
       this.addCandidatesForParsedSelectQuery(ast)
     } else {
-      console.log(`AST type not supported yet: ${ast.type}`)
+      logger.info(`AST type not supported yet: ${ast.type}`)
     }
   }
 

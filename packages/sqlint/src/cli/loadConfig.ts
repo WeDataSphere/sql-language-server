@@ -16,7 +16,7 @@ const defaultConfig: Config = {
     'align-column-to-the-first': { level: ErrorLevel.Off },
     'column-new-line': { level: ErrorLevel.Off },
     'linebreak-after-clause-keyword': { level: ErrorLevel.Off },
-    'reserved-word-case': { level: ErrorLevel.Warn, option: 'upper' },
+    'reserved-word-case': { level: ErrorLevel.Off, option: 'upper' },
     'space-surrounding-operators': { level: ErrorLevel.Off },
     'where-clause-new-line': { level: ErrorLevel.Off },
     'align-where-clause-to-the-first': { level: ErrorLevel.Off },

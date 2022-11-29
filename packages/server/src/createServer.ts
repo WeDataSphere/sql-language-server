@@ -78,7 +78,7 @@ export function createServerWithConnection(
   //var linkis_user_session_ticket_id_v1 = dss_cookie.match(regExp_user_ticket_id)||[];
   //var ticketId = linkis_user_session_ticket_id_v1[0]
   var ticketId = dss_cookie
-  console.log("ticketId:",ticketId)
+  //console.log("ticketId:",ticketId)
 
   //absolveCookies(dss_cookie)
   //console.log("createServerWithConnection cookie:",dss_cookie)
@@ -136,16 +136,16 @@ export function createServerWithConnection(
   }
 
   async function getTableColums(insertTable:string):ColumsInfo[]{
-   console.log("call function getTableColums...")
+   logger.info("call function getTableColums...")
    let table_info = insertTable.split(".")
    //console.log("table_info:",table_info)
    var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1],'GET',dss_cookie);
    if(+body.status===0){
-      console.log("call linkis method /api/rest_j/v1/datasource/columns?database="+table_info[0]+'&table='+table_info[1]+"success!")
+      logger.info("call linkis method /api/rest_j/v1/datasource/columns?database="+table_info[0]+'&table='+table_info[1]+"success!")
    }else{
-      console.log(body.message)
+      logger.info(body.message)
    }
-   console.log("request linkis getColums=====>",body.data)
+   logger.info("request linkis getColums=====>",body.data)
    return body.data
   }
 
@@ -201,13 +201,13 @@ export function createServerWithConnection(
   connection.onInitialized(async () => {
     try {
          const client = getDatabaseClient()
-         console.log("call connection.onInitialized ========>>>>>")
+         logger.info("call connection.onInitialized ========>>>>>")
          //console.log("get schema",JSON.stringify(schema))
-         console.log("user if ticketId:",ticketId)
-         console.log("connection.onInitialized map_schema:",Object.keys(map_schema))
+         logger.info("user if ticketId:",ticketId)
+         logger.info("connection.onInitialized map_schema:",Object.keys(map_schema))
          if(!Object.keys(map_schema).includes(ticketId)){
             logger.info("process in call get schema")
-            console.log("process in call get schema")
+            //console.log("process in call get schema")
             map_schema[ticketId] = await client.getSchema(dss_cookie)
          }
          map_association_catch[ticketId] = map_schema[ticketId]
@@ -259,7 +259,7 @@ export function createServerWithConnection(
   })
 
   connection.onCompletion((docParams: CompletionParams): CompletionItem[] => {
-    console.log("-----------connection onCompletion-------------")
+    logger.info("-----------connection onCompletion-------------")
     if (
       docParams.context?.triggerKind == CompletionTriggerKind.TriggerCharacter
     ) {
@@ -291,7 +291,7 @@ export function createServerWithConnection(
     }else if(map_schema[ticketId] && map_schema[ticketId].association === 'open' && Object.keys(map_association_catch[ticketId].tables).length > 0){
        //console.log("into open map_association_catch[global.ticketId]:",map_association_catch[global.ticketId])
        map_schema[ticketId] = map_association_catch[ticketId]
-       console.log("into open map_schema[ticketId].association:",map_schema[ticketId].association)
+       //console.log("into open map_schema[ticketId].association:",map_schema[ticketId].association)
     }
     //console.log("out of if map_schema[global.ticketId]:",map_schema[global.ticketId],map_schema[global.ticketId].association)
     //console.log("schema =========",schema)
@@ -300,14 +300,14 @@ export function createServerWithConnection(
        let textTrim = text.trim()
        textArray = textTrim.split(";")
        if(textTrim.endsWith(";")){
-         console.log("end with ';':",textArray.length)
+         logger.info("end with ';':",textArray.length)
          text = textArray[textArray.length-2]
        }else{
-         console.log("with no :",textArray.length)
+         logger.info("with no :",textArray.length)
          text = textArray[textArray.length-1]
        }
     }
-    console.log("connection.onCompletion text:",text)
+    //console.log("connection.onCompletion text:",text)
  
     const candidates = complete(
       text,
@@ -388,14 +388,14 @@ export function createServerWithConnection(
   })
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
-    console.log("on completion resolve item:",item)
-    console.log("item.label.indexOf(TRIGGER_CHARATER) != -1",item.label.indexOf(TRIGGER_CHARATER) != -1)
+    //console.log("on completion resolve item:",item)
+    //console.log("item.label.indexOf(TRIGGER_CHARATER) != -1",item.label.indexOf(TRIGGER_CHARATER) != -1)
     if(item.label.indexOf(TRIGGER_CHARATER) != -1 && item.label.trim().substr(-1) !== TRIGGER_CHARATER){
        //console.log("item.label",item.label)
        let table_info = item.label.split(".")
        //console.log("cache_tables[ticketId]",cache_tables[ticketId],item.label)
        if(cache_tables[ticketId] === void 0) cache_tables[ticketId] = []
-       console.log("cache_tables[ticketId]",cache_tables[ticketId],item.label)
+       logger.info("cache_tables[ticketId]",cache_tables[ticketId],item.label)
        if(cache_tables[ticketId].includes(item.label)){
            return item
        }
@@ -437,7 +437,7 @@ export function createServerWithConnection(
       request.command === 'sqlLanguageServer.changeAssociation'
     ){
       const operate = request.arguments ? request.arguments[0] : null
-      console.log("change association",operate)
+      logger.info("change association",operate)
       if( operate === 'close'){
         map_schema[ticketId].association = 'close'
         map_association_catch[ticketId].association = 'close'
@@ -456,10 +456,10 @@ export function createServerWithConnection(
         })
         return
       }
-      console.log("fix request:",request.arguments)
+      //console.log("fix request:",request.arguments)
       const document = documents.get(uri.toString())
       const text = document?.getText()
-      console.log("fix documents:",documents)
+      //console.log("fix documents:",documents)
       if (!text) {
         logger.debug('Failed to get text')
         return
@@ -467,7 +467,7 @@ export function createServerWithConnection(
       const result: LintResult[] = JSON.parse(
         lint({ formatType: 'json', text, fix: true })
       )
-      console.log("fix problems result:",result)
+      //console.log("fix problems result:",result)
       if (result.length === 0 && result[0].fixedText) {
         logger.debug("There's no fixable problems")
         return
@@ -518,7 +518,7 @@ function absolveCookies(cookie:string){
   var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
   var linkis_user_session_ticket_id_v1 = cookie.match(regExp_user_ticket_id)||[];
   global.ticketId = linkis_user_session_ticket_id_v1[0]
-  console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
+  //console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
 }
 
 //定时任务，定时清理schema缓存
