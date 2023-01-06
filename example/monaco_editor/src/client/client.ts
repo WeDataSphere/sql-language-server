@@ -38,7 +38,7 @@ export function initClient() {
 
   MonacoServices.install(monaco);
 
-  const URL = "ws://10.107.97.166:8088/server";
+  const URL = "ws://10.107.116.246:8088/server";
   const webSocket = createWebSocket(URL) as WebSocket;
   listen({
     webSocket,
@@ -85,12 +85,12 @@ export function initClient() {
 
   function createWebSocket(url: string): ReconnectingWebSocket {
     const socketOptions = {
-      maxReconnectionDelay: 10000,
-      minReconnectionDelay: 1000,
-      reconnectionDelayGrowFactor: 1.3,
-      connectionTimeout: 10000,
-      maxRetries: Infinity,
-      debug: false,
+      //maxReconnectionDelay: 10000,
+      //minReconnectionDelay: 1000,
+      //reconnectionDelayGrowFactor: 1.3,
+      //connectionTimeout: 10000,
+      //maxRetries: Infinity,
+      //debug: false,
     };
     return new ReconnectingWebSocket(url, [], socketOptions);
   }

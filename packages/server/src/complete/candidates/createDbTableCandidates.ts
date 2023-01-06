@@ -24,7 +24,8 @@ export function createDbTableCandidates(
     .map((aTableNameVariant) => {
       return new Identifier(
         lastToken,
-        aTableNameVariant,
+        makeTableName(aTableNameVariant),
+        //aTableNameVariant,
         '',
         ICONS.DBTABLE,
         onFromClause ? 'FROM' : 'OTHERS'

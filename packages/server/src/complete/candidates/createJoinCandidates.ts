@@ -27,10 +27,11 @@ export function createJoinCondidates(
   //console.log("createJoinCondidates from table:",JSON.stringify(fromTable))
   //console.log("createJoinCondidates tables:",tables.slice(0,10))
   if (fromTable && fromTable.type === 'table') {
-    //console.log("fromTable && fromTable.type === 'table'")
+    console.log("fromTable && fromTable.type === 'table'")
     result.push(...createDataBaseCandidates(tables, token, true))
-    result.push(...createDbTableCandidates(tables, token, true))
+    //result.push(...createDbTableCandidates(tables, token, true))
     result.push(...createTableCandidates(tables, token, true))
+    console.log(...createTableCandidates(tables, token, true))
     result.push(toCompletionItemForKeyword('INNER JOIN'))
     result.push(toCompletionItemForKeyword('LEFT JOIN'))
     result.push(toCompletionItemForKeyword('ON'))

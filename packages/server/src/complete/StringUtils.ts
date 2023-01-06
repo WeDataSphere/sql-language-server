@@ -4,7 +4,7 @@ import { Pos } from './complete'
 
 export function makeTableAlias(tableName: string): string {
   if (tableName.length > 3) {
-    return tableName.substring(0, 3)
+    return 't' + tableName.substring(0, 3)
   }
   return tableName
 }
@@ -27,7 +27,7 @@ export function makeTableName(table: Table): string {
 }
 
 export function getAliasFromFromTableNode(node: FromTableNode): string {
-  console.log("stringutil getAliasFromFromTableNode:",node)
+  //console.log("stringutil getAliasFromFromTableNode:",node)
   if (node.as) {
     return node.as
   }

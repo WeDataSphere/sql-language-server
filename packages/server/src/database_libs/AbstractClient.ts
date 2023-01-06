@@ -3,6 +3,7 @@ import log4js from 'log4js'
 import { SSHConnection } from 'node-ssh-forward'
 import { Connection } from '../SettingStore'
 import { syncBody } from './CommonUtils'
+import { CompletionItemTag } from 'vscode-languageserver-types'
 
 const logger = log4js.getLogger()
 export const dbs = []
@@ -52,6 +53,7 @@ export type Table = {
 export type DbFunction = {
   name: string
   description: string
+  tags: CompletionItemTag[]
 }
 
 export type Schema = {
@@ -83,7 +85,8 @@ export default abstract class AbstractClient {
       let udfArray = Array.from(udfs)
       functions = udfArray.map(udf=>({
          name: udf.udfName+"()",
-         description: udf.udfName+"()"
+         description: udf.expire ? '过期函数':udf.udfName+"()",
+         tags: udf.expire ? [CompletionItemTag.Deprecated] : null,
       }));
       schema.functions = functions
       console.log("================get all databases ===================")

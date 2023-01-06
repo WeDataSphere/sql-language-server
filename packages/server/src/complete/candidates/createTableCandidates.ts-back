@@ -10,8 +10,7 @@ import { ICONS } from '../CompletionItemUtils'
  * @returns
  */
 function allTableNameCombinations(table: Table): string[] {
-  //const names = [table.tableName]
-  const names = [table.database + '.' + table.tableName]
+  const names = [table.tableName]
   //if (table.database) names.push(table.database + '.' + table.tableName)
   if (table.catalog)
     names.push(table.catalog + '.' + table.database + '.' + table.tableName)
@@ -23,9 +22,10 @@ export function createTableCandidates(
   lastToken: string,
   onFromClause?: boolean
 ) {
-  console.log('===========createTableCandidates=================')
-  return tables
-    .flatMap((table) => allTableNameCombinations(table))
+  var tableNames = new Set()
+  let tableArry = tables.flatMap((table) => allTableNameCombinations(table))
+  tableArry.map(tableName => tableNames.add(tableName))
+  return Array.from(tableNames)
     .map((aTableNameVariant) => {
       return new Identifier(
         lastToken,

@@ -35,7 +35,14 @@ export class Identifier {
   }
 
   matchesLastToken(): boolean {
-    if (this.identifier.startsWith(this.lastToken)) {
+    //let label = this.identifier.includes('.')?this.identifier.substring(this.identifier.indexOf('.')+1):this.identifier
+    let label = ''
+    if(this.identifier.includes('.') && this.lastToken.lastIndexOf('.') === -1){
+      label = this.identifier.substring(this.identifier.indexOf('.')+1)
+    }else{
+      label = this.identifier
+    }
+    if (label.startsWith(this.lastToken)) {
       // prevent suggesting the lastToken itself, there is nothing to complete in that case
       if (this.identifier !== this.lastToken) {
         return true
@@ -46,10 +53,11 @@ export class Identifier {
 
   toCompletionItem(): CompletionItem {
     const idx = this.lastToken.lastIndexOf('.')
-    const label = this.identifier.substring(idx + 1)
+    let label = this.identifier.substring(idx + 1)
     let kindName: ''
     let tableAlias = ''
     let sortText = ''
+    let insertText = label
     if (this.kind === ICONS.TABLE || this.kind === ICONS.DATABASE || this.kind === ICONS.DBTABLE){
       let tableName = label
       const i = tableName.lastIndexOf('.')
@@ -58,31 +66,36 @@ export class Identifier {
       }
       tableAlias = this.onClause === 'FROM' ? makeTableAlias(tableName) : '' 
       if (this.kind === ICONS.TABLE) {
-        kindName = 'table'
+        //kindName = 'table'
+        label = this.identifier.substring(this.identifier.indexOf('.')+1)
+        kindName = this.identifier.substring(0,this.identifier.indexOf('.'))
         sortText = 'c'
       } else if(this.kind === ICONS.DATABASE) {
         kindName = 'db'
         sortText = 'a'
       } else if(this.kind === ICONS.DBTABLE) {
-        kindName = 'db.table'
+        label = this.identifier.substring(label.indexOf('.')+1)
+        kindName = this.identifier.substring(0,this.identifier.indexOf('.'))
         sortText = 'b'
-      } else {
-        kindName = 'column'
       }
+    } else {
+        kindName = 'column'
     }
 
     const item: CompletionItem = {
       label: label,
-      detail: `${kindName} ${this.detail}`,
+      detail: kindName === 'column' ? 'column':`${kindName} ${this.detail}`,
       kind: this.kind,
       sortText: sortText,
+      documentation: `${this.detail}`,
+      tags: [1],
     }
 
-    if (this.kind === ICONS.TABLE) {
+    if (this.kind === ICONS.TABLE || this.kind === ICONS.DBTABLE) {
       if (tableAlias) {
-        item.insertText = `${label} as ${tableAlias}`
+        item.insertText = `${insertText} as ${tableAlias}`
       } else {
-        item.insertText = label
+        item.insertText = insertText
       }
     }
     return item

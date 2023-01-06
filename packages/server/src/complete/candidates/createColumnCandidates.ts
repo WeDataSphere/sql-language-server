@@ -10,6 +10,7 @@ export function createCandidatesForColumnsOfAnyTable(
   tables: Table[],
   lastToken: string
 ): CompletionItem[] {
+  //console.log("================createCandidatesForColumnsOfAnyTable============")
   return tables
     .flatMap((table) => table.columns)
     .map((column) => {
@@ -30,6 +31,7 @@ export function createCandidatesForScopedColumns(
   tables: Table[],
   lastToken: string
 ): CompletionItem[] {
+  //console.log("=====createCandidatesForScopedColumns===")
   return tables
     .flatMap((table) => {
       return fromNodes
@@ -41,7 +43,9 @@ export function createCandidatesForScopedColumns(
             return new Identifier(
               lastToken,
               makeColumnName(alias, col.columnName),
-              col.description,
+              '字段名称：' + col.columnName + '\r\n'+ 
+              '类型：' + col.columnType + '\r\n' + 
+              '备注：' + col.columnComment,
               ICONS.COLUMN
             )
           })

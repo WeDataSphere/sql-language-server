@@ -191,6 +191,9 @@ class Completer {
         item.filterText = '.' + text
       }
     }
+    if(item.kind === 10){
+       console.log("add candidates:",item)
+    }
     this.candidates.push(item)
   }
 
@@ -262,7 +265,7 @@ class Completer {
    */
   addCandidatesForInsert() {
     //this.addCandidatesForColumnsOfAnyTable(this.schema.tables)
-    this.addCandidatesForDbTables(this.schema.tables, false)
+    //this.addCandidatesForDbTables(this.schema.tables, false)
     this.addCandidatesForTables(this.schema.tables, false)
   }
 
@@ -295,17 +298,13 @@ class Completer {
         (v): v is ExpectedLiteralNode => v.type === 'literal'
       ) || []
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
-    //this.addCandidatesForFunctions()
-    //this.addCandidatesForCusFunction()
-    //this.addCandidatesForHqlKeyword()
-    //this.addCandidatesForVariable()
     this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
     this.addCandidatesForAliases(fromNodes)
-    //this.addCandidatesForTables(schemaAndSubqueries, true)
-    if (logger.isDebugEnabled())
-      logger.debug(
-        `candidates for error returns: ${JSON.stringify(this.candidates)}`
-      )
+    this.addCandidatesForTables(schemaAndSubqueries, true)
+    //if (logger.isDebugEnabled())
+    //  logger.debug(
+    //    `candidates for error returns: ${JSON.stringify(this.candidates)}`
+    //  )
   }
 
   addCandidatesForJoins(
@@ -325,7 +324,7 @@ class Completer {
   addCandidatesForParsedDeleteStatement(ast: DeleteStatement) {
     if (isPosInLocation(ast.table.location, this.pos)) {
       this.addCandidatesForDbs(this.schema.tables, false)
-      this.addCandidatesForDbTables(this.schema.tables, false)
+      //this.addCandidatesForDbTables(this.schema.tables, false)
       this.addCandidatesForTables(this.schema.tables, false)
     } else if (
       ast.where &&
@@ -404,8 +403,10 @@ class Completer {
   }
 
   addCandidatesForFunctions() {
+    console.log("addCandidatesForFunctions this.schema.functions:",this.schema.functions)
     createFunctionCandidates(this.schema.functions, this.lastToken).forEach(
       (v) => {
+        console.log("addCandidatesForFunctions v:",v)
         this.addCandidate(v)
       }
     )

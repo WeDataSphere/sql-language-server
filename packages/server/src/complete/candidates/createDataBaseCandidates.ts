@@ -21,7 +21,6 @@ export function createDataBaseCandidates(
   var dataBaseNames = new Set()
   let databases = tables.flatMap((table) => allDataBaseCombinations(table))
   databases.map(database => dataBaseNames.add(database))
-  console.log("dataBaseNames:",dataBaseNames)
   return Array.from(dataBaseNames)
     .map((aTableNameVariant) => {
       return new Identifier(

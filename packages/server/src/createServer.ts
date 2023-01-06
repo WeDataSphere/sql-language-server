@@ -25,12 +25,13 @@ import { complete } from './complete'
 import createDiagnostics from './createDiagnostics'
 import createConnection from './createConnection'
 import SettingStore, { Connection as SettingConnection } from './SettingStore'
-import { Schema } from './database_libs/AbstractClient'
+import { Schema,RawField,Column } from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
 import { syncBody } from './database_libs/CommonUtils'
 import { fileExists, readFile } from '../../sqlint/src/cli/utils'
+import { CompletionItemTag } from 'vscode-languageserver-types'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
@@ -39,6 +40,7 @@ const insertTable = ''
 //let map_schema={tables: [], functions: [], association: ""}
 let map_schema={}
 let cache_tables=[]
+let cache_db = []
 let set_tables = new Set()
 //let map_association_catch = {tables: [], functions: [], association: ""}
 let map_association_catch = {}
@@ -59,6 +61,21 @@ export type ColumsInfo = {
 type TimingConfig = {
   interval: number
   time: string
+}
+
+type SchemaInfo = {
+  dbCapacity: string
+  dbName: string
+  dbSize: string
+  description: string
+  tableQuantity: string
+}
+
+type ColumField = {
+  columnName: string
+  columnType: string
+  columnComment: string
+  partitioned: string
 }
 
 const config = {//参数的说明
@@ -135,19 +152,29 @@ export function createServerWithConnection(
     connection.sendDiagnostics(diagnostics)
   }
 
-  async function getTableColums(insertTable:string):ColumsInfo[]{
+  async function getTableColums(db:string,table:string):ColumsInfo[]{
    logger.info("call function getTableColums...")
-   let table_info = insertTable.split(".")
-   //console.log("table_info:",table_info)
-   var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/columns?database='+table_info[0]+'&table='+table_info[1],'GET',dss_cookie);
+   var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/columns?database=' + db + '&table=' + table,'GET',dss_cookie);
    if(+body.status===0){
-      logger.info("call linkis method /api/rest_j/v1/datasource/columns?database="+table_info[0]+'&table='+table_info[1]+"success!")
+      logger.info("call linkis method /api/rest_j/v1/datasource/columns?database=" + db + '&table=' + table + " success!")
    }else{
       logger.info(body.message)
    }
    logger.info("request linkis getColums=====>",body.data)
    return body.data
   }
+
+  async function getSchemaBaseInfo(dbName:string):SchemaInfo{
+    logger.info("call function getSchemaBaseInfo...")
+    var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=' + dbName,'GET',dss_cookie);
+    if(+body.status===0){
+       logger.info("call linkis method /api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=" + dbName + " success!")
+    }else{
+       logger.info(body.message)
+    }
+    logger.info("request linkis getSchemaBaseInfo=====>",body.data)
+    return body.data
+   }
 
   documents.onDidChangeContent(async (params) => {
     logger.debug(
@@ -293,8 +320,6 @@ export function createServerWithConnection(
        map_schema[ticketId] = map_association_catch[ticketId]
        //console.log("into open map_schema[ticketId].association:",map_schema[ticketId].association)
     }
-    //console.log("out of if map_schema[global.ticketId]:",map_schema[global.ticketId],map_schema[global.ticketId].association)
-    //console.log("schema =========",schema)
      let textArray = []
      if(text.includes(";")){
        let textTrim = text.trim()
@@ -383,34 +408,54 @@ export function createServerWithConnection(
       CodeActionKind.QuickFix
     )
     action.diagnostics = params.context.diagnostics
-    //console.log("on code action diagnostics:",JSON.stringify(action.diagnostics))
     return [action]
   })
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
-    //console.log("on completion resolve item:",item)
-    //console.log("item.label.indexOf(TRIGGER_CHARATER) != -1",item.label.indexOf(TRIGGER_CHARATER) != -1)
-    if(item.label.indexOf(TRIGGER_CHARATER) != -1 && item.label.trim().substr(-1) !== TRIGGER_CHARATER){
-       //console.log("item.label",item.label)
-       let table_info = item.label.split(".")
-       //console.log("cache_tables[ticketId]",cache_tables[ticketId],item.label)
+    console.log('onCompletionResolve:',item)
+    //kind=10为udf函数
+    if(item.kind === 10){
+      if(item.documentation === '过期函数')
+        item.tags = [1]
+    }
+    //kind = 4 载入库信息
+    if(item.kind ===4){
+      let dbName = item.label.trim()
+      //检查缓存
+      if(cache_db[ticketId] === void 0) cache_db[ticketId] = []
+      if(cache_db[ticketId].includes(dbName)){
+        return item
+      }
+      cache_db[ticketId].push(dbName)
+      //调用api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=bdp_dqm_tmp_db
+      let schemaInfo = await getSchemaBaseInfo(dbName)
+      item.documentation = 
+        ' 库名：' + dbName + 
+        '\r\n 库大小：' + schemaInfo.schemaInfo.dbSize + 
+        '\r\n 库配额：' + schemaInfo.schemaInfo.dbCapacity + 
+        '\r\n 表数量：' + schemaInfo.schemaInfo.tableQuantity + 
+        '\r\n 备注：' + schemaInfo.schemaInfo.description
+    }
+    //联想表kind=5
+    if(item.kind === 5){
+       let table = item.label
+       let db = item.detail.trim()
+       //检查缓存
        if(cache_tables[ticketId] === void 0) cache_tables[ticketId] = []
-       logger.info("cache_tables[ticketId]",cache_tables[ticketId],item.label)
-       if(cache_tables[ticketId].includes(item.label)){
+       if(cache_tables[ticketId].includes(db + '.' + table)){
            return item
        }
-       let colums =  await getTableColums(item.label)
-       //console.log(colums)
+       //调用接口获取字段数据
+       let colums =  await getTableColums(db,table)
+       //组装字段
        map_schema[ticketId].tables.forEach(x=>{
-          if(x.database==table_info[0]&&x.tableName==table_info[1]){
+          if(x.database==db&&x.tableName==table){
              x.columns = colums.columns
           }
        });
-       //set_tables.add(item.label)
-       cache_tables[ticketId].push(item.label)
-       cache_tables[ticketId] = [...new Set(cache_tables[ticketId])]
+       //缓存
+       cache_tables[ticketId].push(db + '.' + table)
     }
-    //console.log("on completion resolve cache_table functions:",map_schema[global.ticketId].functions)
     return item
   })
 
@@ -524,17 +569,6 @@ function absolveCookies(cookie:string){
 //定时任务，定时清理schema缓存
 const timeoutFunc =(config, func) =>{
   console.log("定时任务执行中。。。")
-  //let filePath = path.join(path.resolve(__dirname, '../../../'), 'timing.json')
-  //console.log("配置文件路径：",filePath)
-  //if(fileExists(filePath)){
-  //  const fileContent = readFile(filePath)
-  //  let timingconfig: TimingConfig
-  //  timingconfig = JSON.parse(fileContent)
-  //  config = timingconfig
-  //  console.log("配置文件存在，读取配置文件配置信息：",config)
-  //}else{
-  //  console.log("配置文件不存在,加载默认配置:",config)
-  //}
   const nowTime = new Date().getTime()
   const timePoints = process.env.timing_time.split(':').map(i => parseInt(i))
   let recent = new Date().setHours(...timePoints)
@@ -553,6 +587,5 @@ const timeoutFunc =(config, func) =>{
 timeoutFunc(config,()=>{
   map_schema = {}
   cache_tables=[]
-  //set_tables.clear()  
 })
 

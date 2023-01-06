@@ -25,9 +25,10 @@ export function toCompletionItemForDb(f: DbFunction): CompletionItem {
 export function toCompletionItemForFunction(f: DbFunction): CompletionItem {
   const item: CompletionItem = {
     label: f.name,
-    detail: 'function',
+    detail: 'udfFunction',
     kind: ICONS.FUNCTION,
     documentation: f.description,
+    tags: f.tags,
   }
   return item
 }
@@ -50,11 +51,12 @@ export function toCompletionItemForKeyword(name: string): CompletionItem {
   return item
 }
 
-export function toCompletionItemForCusFunction(name: string): CompletionItem {
+export function toCompletionItemForCusFunction(name: string, documentation: string): CompletionItem {
   const item: CompletionItem = {
     label: name,
     kind: ICONS.FUNCTION,
-    detail: 'baseFunction'
+    detail: 'baseFunction',
+    documentation: documentation
   }
   return item
 }
