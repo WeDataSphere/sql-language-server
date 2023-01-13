@@ -5,7 +5,6 @@ import { createServerWithConnection } from 'sql-language-server/src/createServer
 export function launchServer(socket: rpc.IWebSocket,dss_cookie: string) {
   const reader = new rpc.WebSocketMessageReader(socket)
   const writer = new rpc.WebSocketMessageWriter(socket)
-  console.log("launchServer socket:",dss_cookie);
   const asExternalProccess =
     process.argv.findIndex((value) => value === '--external') !== -1
   if (asExternalProccess) {

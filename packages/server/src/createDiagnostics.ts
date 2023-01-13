@@ -58,38 +58,60 @@ export default function createDiagnostics(
   config?: RawConfig | null
 ): PublishDiagnosticsParams {
   logger.debug(`createDiagnostics`)
+  logger.debug(`sql:`,sql)
   let diagnostics: Diagnostic[] = []
-  // try {
-  //   const ast = parse(sql)
-  //   logger.debug(`ast: ${JSON.stringify(ast)}`)
-  //   diagnostics = doLint(uri, sql, config)
-  // } catch (e) {
-  //   const err = e as NodeJS.ErrnoException
-  //   logger.debug('parse error')
-  //   logger.debug(e)
-  //   cache.setLintCache(uri, [])
-  //   if (err.name !== 'SyntaxError') {
-  //     throw e
-  //   }
-  //   const pe = e as ParseError
-  //   diagnostics.push({
-  //     range: {
-  //       start: {
-  //         line: pe.location.start.line - 1,
-  //         character: pe.location.start.column,
-  //       },
-  //       end: {
-  //         line: pe.location.end.line - 1,
-  //         character: pe.location.end.column,
-  //       },
-  //     },
-  //     message: pe.message,
-  //     severity: DiagnosticSeverity.Error,
-  //     // code: number | string,
-  //     source: 'sql',
-  //     relatedInformation: [],
-  //   })
-  // }
+  let sqlArry = sql.split(';')
+  let lineNum = 0
+  sqlArry.filter(i => i).forEach(sqlItem => {
+    console.log("---------------------")
+    console.log("sqlItem:",sqlItem)
+    console.log("lineNum =",lineNum)
+    sqlError(uri,sqlItem,lineNum).forEach(item =>{
+     diagnostics.push(item)
+    })
+    lineNum = sqlItem.split("\n").length+lineNum-1
+    console.log("lineNum+",lineNum)
+  });
+  //console.log("diagnostics:",JSON.stringify(diagnostics))
   logger.debug(`diagnostics: ${JSON.stringify(diagnostics)}`)
   return { uri: uri, diagnostics }
 }
+
+function sqlError(uri: string,
+  sql: string,lineNum: number):Diagnostic[]{
+    let diagnostics: Diagnostic[] = []
+  try {
+    const ast = parse(sql)
+    logger.debug(`ast: ${JSON.stringify(ast)}`)
+    diagnostics = doLint(uri, sql)
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException
+    logger.debug('parse error')
+    logger.debug(e)
+    cache.setLintCache(uri, [])
+    if (err.name !== 'SyntaxError') {
+      throw e
+    }
+    const pe = e as ParseError
+    diagnostics.push({
+      range: {
+        start: {
+          //line: lineNum,
+          line: pe.location.start.line - 1 + lineNum,
+          character: pe.location.start.column,
+        },
+        end: {
+          //line: lineNum,
+          line: pe.location.end.line - 1 + lineNum,
+          character: pe.location.end.column,
+        },
+      },
+      message: pe.message,
+      severity: DiagnosticSeverity.Error,
+      source: 'sql',
+      relatedInformation: [],
+    })
+  }
+  return diagnostics
+}
+

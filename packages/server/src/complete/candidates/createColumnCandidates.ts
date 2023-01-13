@@ -10,20 +10,25 @@ export function createCandidatesForColumnsOfAnyTable(
   tables: Table[],
   lastToken: string
 ): CompletionItem[] {
-  //console.log("================createCandidatesForColumnsOfAnyTable============")
+  console.log("================createCandidatesForColumnsOfAnyTable============")
+  console.log("lastToken:",lastToken)
   return tables
-    .flatMap((table) => table.columns)
-    .map((column) => {
+    .flatMap((table) => table.columns).filter((s)=> s !== null)
+    .map((column) =>{ 
       return new Identifier(
         lastToken,
         column.columnName,
-        column.description,
-        ICONS.TABLE,
+        '字段名称：' + column.columnName + '\r\n'+
+        '类型：' + column.columnType + '\r\n' +
+        '备注：' + column.columnComment,
+        ICONS.COLUMN,
         'FROM'
       )
     })
     .filter((item) => item.matchesLastToken())
     .map((item) => item.toCompletionItem())
+   //console.log('testC:',testC.filter((item)=>item.matchesLastToken()).map((item)=>item.toCompletionItem()))
+   //return testC.filter((item)=>item.matchesLastToken()).map((item)=>item.toCompletionItem())
 }
 
 export function createCandidatesForScopedColumns(

@@ -292,7 +292,6 @@ const CLAUSES_F: string[] = [
   'USER',
   'USING',
   'UTC_TMESTAMP',
-  'VALUES',
   'VARCHAR',
   'WHEN',
   'WHERE',

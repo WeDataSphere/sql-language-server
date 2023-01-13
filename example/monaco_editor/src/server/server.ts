@@ -5,17 +5,18 @@ import type net from "net";
 import url from "url";
 import type rpc from "vscode-ws-jsonrpc";
 import { launchServer } from "./launchServer";
+//import log4js from 'log4js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//const logger = log4js.getLogger()
 const envConfig = require("../../../../env.json")
 Object.assign(process.env,envConfig)
-console.log(envConfig)
 
 process.setMaxListeners(0)
 process.on("uncaughtException", function (err: any) {
-  console.error("Uncaught Exception: ", err.toString());
+  //logger.error("Uncaught Exception: ", err.toString());
   if (err.stack) {
-    console.error(err.stack);
+    //logger.error(err.stack);
   }
 });
 
@@ -26,13 +27,13 @@ function getWebsocketKey(headers: string):string{
   if(headers === "" || headers == void 0){
     return ""
   }
-  console.log("type of headers:",typeof(headers))
+  //logger.info("type of headers:",typeof(headers))
   //let headerToStr = JSON.stringify(headers).replace(/\"/g, "")
   let strWebsocketKey
-  console.log("getWebsocketKey headers:",headers)
+  //logger.info("getWebsocketKey headers:",headers)
   var regExp_headers = '(?<="sec-websocket-key":")[^"]+'
   var websocketKey = headers.match(regExp_headers)[0]||"";
-  console.log("websocketKey:",websocketKey)
+  //logger.info("websocketKey:",websocketKey)
   return websocketKey
 }
 
@@ -40,7 +41,7 @@ function startServer() {
   const app = express();
   app.use(express.static(`${process.cwd()}/dist`));
   server = app.listen(process.env.server_port);
-  console.log("startServer");
+  //logger.info("startServer");
 
   const wss = new ws.Server({
     noServer: true,
@@ -60,7 +61,7 @@ function startServer() {
             cookieArry[dss_cookie] = webSocket
             webSockets = cookieArry[dss_cookie]
           }
-          console.log("dss_cookie:",dss_cookie)
+          //logger.info("dss_cookie:",dss_cookie)
           const socket: rpc.IWebSocket = {
             send: (content) =>
               webSockets.send(content, (error) => {
@@ -79,14 +80,14 @@ function startServer() {
             //onClose: (cb) => webSockets.on("close", cb),
             dispose: () => webSockets.close(),
           };
-          console.log("cookieArry[dss_cookie]:",Object.keys(cookieArry))
+          //logger.info("cookieArry[dss_cookie]:",Object.keys(cookieArry))
           if (webSockets.readyState === webSockets.OPEN) {
-            console.log("webSockets.OPEN dss_cookie:",dss_cookie)
-            console.log("ready to launch server");
+            //logger.info("webSockets.OPEN dss_cookie:",dss_cookie)
+            //logger.info("ready to launch server");
             launchServer(socket,dss_cookie);
           } else {
             webSockets.on("open", () => {
-              console.log("ready to launch server");
+              //logger.info("ready to launch server");
               launchServer(socket,dss_cookie);
             });
           }
@@ -95,6 +96,24 @@ function startServer() {
     }
   );
 }
+
+const timeoutFunc =(func) =>{
+  //logger.info("定时任务执行中。。。")
+  const nowTime = new Date().getTime()
+  const timePoints = process.env.timing_time.split(':').map(i => parseInt(i))
+  let recent = new Date().setHours(...timePoints)
+  recent >= nowTime || (recent += 24 * 3600000)
+  //logger.info("recent - nowTime:",recent - nowTime)
+  setTimeout(() => {
+    func()
+    setInterval(func, process.env.timing_interval * 3600000 * 24)
+    //logger.info("===========定时任务执行成功==================")
+    //logger.info("cookieArry:",cookieArry)
+    //logger.info("=============================================")
+  }, recent - nowTime)
+}
+
+timeoutFunc(()=>{ cookieArry = {} })
 
 startServer();
 

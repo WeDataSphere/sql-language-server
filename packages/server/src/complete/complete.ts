@@ -92,7 +92,6 @@ class Completer {
     try {
       const ast = parse(target)
       logger.debug("after parse target:",ast)
-      //console.log("after parse target:",ast)
       this.addCandidatesForParsedStatement(ast)
     } catch (_e: unknown) {
       logger.debug('error')
@@ -106,7 +105,7 @@ class Completer {
       }
       const e = _e as ParseError
       const parsedFromClause = getFromNodesFromClause(this.sql)
-      //console.log("e.message:",e.message)
+      logger.info("e.message:",e.message)
       if (parsedFromClause) {
         const fromNodes = getAllNestedFromNodes(
           parsedFromClause?.from?.tables || []
@@ -126,9 +125,10 @@ class Completer {
             ) || []
           this.addCandidatesForJoins(expectedLiteralNodes, fromNodes)
         }
-      } else if (this.sql.trim().toLowerCase().startsWith('insert into')){
-      // else if (e.message === 'EXPECTED COLUMN NAME') {
-        //console.log("for insert")
+      } 
+      //else if (this.sql.trim().toLowerCase().startsWith('insert into')){
+      else if (e.message === 'EXPECTED COLUMN NAME') {
+        logger.debug("EXPECTED COLUMN NAME for insert")
         this.addCandidatesForInsert()
       } else if (this.sql.trim().toLowerCase().startsWith('use')){
         this.addCandidatesForDbs(this.schema.tables, false)
@@ -190,9 +190,6 @@ class Completer {
         item.insertText = '.' + text
         item.filterText = '.' + text
       }
-    }
-    if(item.kind === 10){
-       console.log("add candidates:",item)
     }
     this.candidates.push(item)
   }
@@ -264,13 +261,13 @@ class Completer {
    * INSERT INTO TABLE1 (C
    */
   addCandidatesForInsert() {
-    //this.addCandidatesForColumnsOfAnyTable(this.schema.tables)
+    this.addCandidatesForColumnsOfAnyTable(this.schema.tables)
     //this.addCandidatesForDbTables(this.schema.tables, false)
-    this.addCandidatesForTables(this.schema.tables, false)
+    //this.addCandidatesForTables(this.schema.tables, false)
   }
 
   addCandidatesForError(e: ParseError) {
-    //console.log("oncomplete addCandidatesForError")
+    logger.debug("oncomplete addCandidatesForError")
     const expectedLiteralNodes =
       e.expected?.filter(
         (v): v is ExpectedLiteralNode => v.type === 'literal'
@@ -280,16 +277,16 @@ class Completer {
     //this.addCandidatesForCusFunction()
     this.addDefinedGrammarCandidates()
     this.addCandidatesForHqlKeyword()
-    this.addBaseColumnsCandidates()
+    //this.addBaseColumnsCandidates()
     this.addCandidatesForVariable()
     //this.addCandidatesForBasicKeyword()
-    //this.addCandidatesForDbs(this.schema.tables, false)
+    this.addCandidatesForDbs(this.schema.tables, false)
     //this.addCandidatesForDbTables(this.schema.tables, false)
-    //this.addCandidatesForTables(this.schema.tables, false)
+    this.addCandidatesForTables(this.schema.tables, false)
   }
 
   addCandidatesForSelectQuery(e: ParseError, fromNodes: FromTableNode[]) {
-    //console.log("oncomplete addCandidatesForSelectQuery")
+    logger.debug("oncomplete addCandidatesForSelectQuery")
     const subqueryTables = createTablesFromFromNodes(fromNodes)
     const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     this.addCandidatesForSelectStar(fromNodes, schemaAndSubqueries)
@@ -301,6 +298,7 @@ class Completer {
     this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
     this.addCandidatesForAliases(fromNodes)
     this.addCandidatesForTables(schemaAndSubqueries, true)
+    this.addBaseColumnsCandidates()
     //if (logger.isDebugEnabled())
     //  logger.debug(
     //    `candidates for error returns: ${JSON.stringify(this.candidates)}`
@@ -372,8 +370,8 @@ class Completer {
         this.addCandidatesForAliases(fromNodes)
         this.addCandidatesForFunctions()
         this.addCandidatesForCusFunction()
-        this.addBaseColumnsCandidates()
         this.addCandidatesForHqlKeyword()
+        this.addBaseColumnsCandidates()
         this.addCandidatesForVariable()
       }
     }
@@ -403,10 +401,9 @@ class Completer {
   }
 
   addCandidatesForFunctions() {
-    console.log("addCandidatesForFunctions this.schema.functions:",this.schema.functions)
+    logger.debug("addCandidatesForFunctions this.schema.functions:",this.schema.functions)
     createFunctionCandidates(this.schema.functions, this.lastToken).forEach(
       (v) => {
-        console.log("addCandidatesForFunctions v:",v)
         this.addCandidate(v)
       }
     )

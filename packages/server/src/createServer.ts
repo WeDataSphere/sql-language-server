@@ -35,6 +35,8 @@ import { CompletionItemTag } from 'vscode-languageserver-types'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
+const logger = log4js.getLogger()
+
 const TRIGGER_CHARATER = '.'
 const insertTable = ''
 //let map_schema={tables: [], functions: [], association: ""}
@@ -88,7 +90,7 @@ export function createServerWithConnection(
   dss_cookie: string,
   debug = false
 ) {
-  initializeLogging(debug)
+  //initializeLogging(debug)
   //赋值cookie到全局变量
   //global.cookies=dss_cookie
   //var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
@@ -99,7 +101,7 @@ export function createServerWithConnection(
 
   //absolveCookies(dss_cookie)
   //console.log("createServerWithConnection cookie:",dss_cookie)
-  const logger = log4js.getLogger()
+  //const logger = log4js.getLogger()
   const documents = new TextDocuments(TextDocument)
   documents.listen(connection)
   let schema: Schema = { tables: [], functions: [] }
@@ -140,7 +142,7 @@ export function createServerWithConnection(
   }
 
   async function makeDiagnostics(document: TextDocument) {
-    //logger.debug("create server makeDiagnostics textDocument:",document.getText())
+    logger.debug("create server makeDiagnostics textDocument:",document.getText())
     const hasRules =
       !!lintConfig && Object.prototype.hasOwnProperty.call(lintConfig, 'rules')
     const diagnostics = createDiagnostics(
@@ -412,21 +414,16 @@ export function createServerWithConnection(
   })
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
-    console.log('onCompletionResolve:',item)
+    //logger.info('onCompletionResolve:',item)
     //kind=10为udf函数
     if(item.kind === 10){
       if(item.documentation === '过期函数')
         item.tags = [1]
+      item.documentation = {kind:'markdown',value:item.documentation.value}
     }
     //kind = 4 载入库信息
     if(item.kind ===4){
       let dbName = item.label.trim()
-      //检查缓存
-      if(cache_db[ticketId] === void 0) cache_db[ticketId] = []
-      if(cache_db[ticketId].includes(dbName)){
-        return item
-      }
-      cache_db[ticketId].push(dbName)
       //调用api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=bdp_dqm_tmp_db
       let schemaInfo = await getSchemaBaseInfo(dbName)
       item.documentation = 
@@ -456,6 +453,7 @@ export function createServerWithConnection(
        //缓存
        cache_tables[ticketId].push(db + '.' + table)
     }
+    logger.info('onCompletionResolve:',item)
     return item
   })
 
@@ -568,19 +566,20 @@ function absolveCookies(cookie:string){
 
 //定时任务，定时清理schema缓存
 const timeoutFunc =(config, func) =>{
-  console.log("定时任务执行中。。。")
+  initializeLogging(false)
+  logger.info("定时任务执行中。。。")
   const nowTime = new Date().getTime()
   const timePoints = process.env.timing_time.split(':').map(i => parseInt(i))
   let recent = new Date().setHours(...timePoints)
   recent >= nowTime || (recent += 24 * 3600000)
-  console.log("recent - nowTime:",recent - nowTime)
+  logger.info("recent - nowTime:",recent - nowTime)
   setTimeout(() => {
     func()
     setInterval(func, process.env.timing_interval * 3600000 * 24)
-    console.log("===========定时任务执行成功==================")
-    console.log("map_schema:",map_schema)
-    console.log("cache_tables:",cache_tables)
-    console.log("=============================================")
+    logger.info("===========定时任务执行成功==================")
+    logger.info("map_schema:",map_schema)
+    logger.info("cache_tables:",cache_tables)
+    logger.info("=============================================")
   }, recent - nowTime)
 }
 

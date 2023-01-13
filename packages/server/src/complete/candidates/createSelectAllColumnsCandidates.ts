@@ -22,11 +22,11 @@ export function createSelectAllColumnsCandidates(
       .map((alias) => {
         const columnNames = table.columns
           .map((col) => makeColumnName(alias, col.columnName))
-          .join(',\n')
+          .join(',')
         const label = `Select all columns from ${alias}`
         let prefix = ''
         if (lastToken) {
-          prefix = lastToken + '\n'
+          prefix = lastToken + ' '
         }
 
         return {

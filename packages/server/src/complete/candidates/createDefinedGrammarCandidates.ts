@@ -32,14 +32,5 @@ export function createDefinedGrammarCandidates(){
             insertText: 'insert overwrite table {${1:table_name}$0} partition({partition});',
             detail: '常用语法结构',
         },
-        {
-            label: "dbpd_alm_ods_safe.alm_rep_fact_hivestream_fixed_dtl",
-            detail: "db.table ",
-            filterText: "rep",
-            insertTextFormat: 1,
-            insertText: "dbpd_alm_ods_safe.alm_rep_fact_hivestream_fixed_dtl",
-            kind: 11,
-            sortText: "b"
-       }
     ]
 }

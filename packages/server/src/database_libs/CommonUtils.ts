@@ -1,11 +1,12 @@
 import log4js from 'log4js'
 
+const logger = log4js.getLogger()
 const requestSync = require("request");
 export const dbs = []
 const map_all = {}
 
 export let synchronous_method = function (url,method,ticketId) {
-console.log("common utils sychronous_method method:",url,method,ticketId)
+  logger.info("common utils sychronous_method method:",url,method,ticketId)
   let options = {
       url: url,
       method: method,
@@ -40,7 +41,7 @@ console.log("common utils sychronous_method method:",url,method,ticketId)
 }
 
 export let syncBody = async function (url,method,ticketId) {
-  console.log("get into syncBody:",url,method,ticketId)
+  logger.info("get into syncBody:",url,method,ticketId)
   var url = url;
   let body = await synchronous_method(url,method,ticketId);
   return JSON.parse(body);

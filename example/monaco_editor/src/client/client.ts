@@ -113,17 +113,14 @@ export function executeSwitchDatabaseCommand(db: string) {
     command: "switchDatabaseConnection",
     arguments: [db],
   };
-  console.log("execute switch database command", params)
   languageClient.sendRequest("workspace/executeCommand", params);
 }
 
 export function executeChangeAssociationCommand(operate: string){
-  console.log("execute change association command", operate)
   const params: ExecuteCommandParams = {
     command: "changeAssociation",
     arguments: [operate],
   };
-  console.log("execute change association params", params)
   languageClient.sendRequest("workspace/executeCommand", params);
 }
 

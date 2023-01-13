@@ -4,9 +4,9 @@ import { Pos } from './complete'
 
 export function makeTableAlias(tableName: string): string {
   if (tableName.length > 3) {
-    return 't' + tableName.substring(0, 3)
+    return 't' +  tableName.substring(0, 3)
   }
-  return tableName
+  return 't' + tableName
 }
 
 export function getRidOfAfterPosString(sql: string, pos: Pos): string {

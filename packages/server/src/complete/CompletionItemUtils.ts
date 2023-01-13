@@ -1,4 +1,4 @@
-import { CompletionItem, CompletionItemKind } from 'vscode-languageserver-types'
+import { CompletionItem, CompletionItemKind, MarkupContent } from 'vscode-languageserver-types'
 import { DbFunction } from '../database_libs/AbstractClient'
 
 export const ICONS = {
@@ -47,11 +47,12 @@ export function toCompletionItemForKeyword(name: string): CompletionItem {
     label: name,
     kind: ICONS.KEYWORD,
     detail: 'keyword',
+    ortText: 'a',
   }
   return item
 }
 
-export function toCompletionItemForCusFunction(name: string, documentation: string): CompletionItem {
+export function toCompletionItemForCusFunction(name: string, documentation: MarkupContent): CompletionItem {
   const item: CompletionItem = {
     label: name,
     kind: ICONS.FUNCTION,
