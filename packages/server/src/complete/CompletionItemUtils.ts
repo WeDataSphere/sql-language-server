@@ -10,6 +10,7 @@ export const ICONS = {
   UTILITY: CompletionItemKind.Event,
   DATABASE: CompletionItemKind.Constructor,
   DBTABLE: CompletionItemKind.Unit,
+  BASEFUNCTION:CompletionItemKind.Struct,
 }
 
 export function toCompletionItemForDb(f: DbFunction): CompletionItem {
@@ -47,7 +48,7 @@ export function toCompletionItemForKeyword(name: string): CompletionItem {
     label: name,
     kind: ICONS.KEYWORD,
     detail: 'keyword',
-    ortText: 'a',
+    sortText: 'a',
   }
   return item
 }
@@ -55,8 +56,9 @@ export function toCompletionItemForKeyword(name: string): CompletionItem {
 export function toCompletionItemForCusFunction(name: string, documentation: MarkupContent): CompletionItem {
   const item: CompletionItem = {
     label: name,
-    kind: ICONS.FUNCTION,
+    kind: ICONS.BASEFUNCTION,
     detail: 'baseFunction',
+    sortText: 'b',
     documentation: documentation
   }
   return item

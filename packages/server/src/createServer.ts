@@ -30,8 +30,6 @@ import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
 import { syncBody } from './database_libs/CommonUtils'
-import { fileExists, readFile } from '../../sqlint/src/cli/utils'
-import { CompletionItemTag } from 'vscode-languageserver-types'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
@@ -39,20 +37,14 @@ const logger = log4js.getLogger()
 
 const TRIGGER_CHARATER = '.'
 const insertTable = ''
-//let map_schema={tables: [], functions: [], association: ""}
 let map_schema={}
 let cache_tables=[]
-let cache_db = []
-let set_tables = new Set()
-//let map_association_catch = {tables: [], functions: [], association: ""}
 let map_association_catch = {}
-let map_operate = {}
 
 const envConfig = require("../../../env.json")
 Object.assign(process.env,envConfig)
 
 export const map_colums={}
-//let schema: Schema = { tables: [], functions: [] , association: ""}
 
 export type ColumsInfo = {
   columnComment: string | null
@@ -90,18 +82,7 @@ export function createServerWithConnection(
   dss_cookie: string,
   debug = false
 ) {
-  //initializeLogging(debug)
-  //赋值cookie到全局变量
-  //global.cookies=dss_cookie
-  //var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
-  //var linkis_user_session_ticket_id_v1 = dss_cookie.match(regExp_user_ticket_id)||[];
-  //var ticketId = linkis_user_session_ticket_id_v1[0]
   var ticketId = dss_cookie
-  //console.log("ticketId:",ticketId)
-
-  //absolveCookies(dss_cookie)
-  //console.log("createServerWithConnection cookie:",dss_cookie)
-  //const logger = log4js.getLogger()
   const documents = new TextDocuments(TextDocument)
   documents.listen(connection)
   let schema: Schema = { tables: [], functions: [] }
@@ -115,7 +96,6 @@ export function createServerWithConnection(
       const home = process.env.HOME || ''
       filePath = path.join(home, filePath.slice(1))
     }
-
     logger.info(`loading schema file: ${filePath}`)
     const data = fs.readFileSync(filePath, 'utf8').replace(/^\ufeff/u, '')
     try {
@@ -150,7 +130,6 @@ export function createServerWithConnection(
       document.getText(),
       hasRules ? lintConfig : null
     )
-    //console.log("create server makeDiagnostics diagnostics:",diagnostics)
     connection.sendDiagnostics(diagnostics)
   }
 
@@ -182,21 +161,11 @@ export function createServerWithConnection(
     logger.debug(
       `onDidChangeContent: ${params.document.uri}, ${params.document.version}`
     )
-    //let docText = params.document.getText()
-    //if(docText.includes(";")){
-    //  let textTrim = docText.trim()
-    //  let textArray = textTrim.split(";")
-    //  if(textTrim.endsWith(";")){
-    //     params.document._content = textArray[textArray.length-2]
-    //  }else{
-    //     params.document._content = textArray[textArray.length-1]
-    //  }
-    //}
-    makeDiagnostics(params.document)
+    if(process.env.parser_enable)
+      makeDiagnostics(params.document)
   })
 
   connection.onInitialize((params): InitializeResult => {
-    //console.log("onInitialize params:",JSON.stringify(params))
     const capabilities = params.capabilities
     // JupyterLab sends didChangeConfiguration information
     // using both the workspace.configuration and
@@ -231,12 +200,10 @@ export function createServerWithConnection(
     try {
          const client = getDatabaseClient()
          logger.info("call connection.onInitialized ========>>>>>")
-         //console.log("get schema",JSON.stringify(schema))
          logger.info("user if ticketId:",ticketId)
          logger.info("connection.onInitialized map_schema:",Object.keys(map_schema))
          if(!Object.keys(map_schema).includes(ticketId)){
             logger.info("process in call get schema")
-            //console.log("process in call get schema")
             map_schema[ticketId] = await client.getSchema(dss_cookie)
          }
          map_association_catch[ticketId] = map_schema[ticketId]
@@ -296,7 +263,6 @@ export function createServerWithConnection(
         return []
       }
     }
-    //logger.info("createServer onCompletion docParams:",docParams)
     let text = documents.get(docParams.textDocument.uri)?.getText()
     if (!text) {
       return []
@@ -304,7 +270,6 @@ export function createServerWithConnection(
     logger.debug(text || '')
     const pos = {
       line: docParams.position.line,
-      //line: 0,
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
@@ -312,15 +277,11 @@ export function createServerWithConnection(
        map_schema[ticketId] = {"tables":[],"functions":[],"association":""}
        map_association_catch[ticketId] = {"tables":[],"functions":[],"association":""}
     }
-    //console.log(map_schema[ticketId])
     if(map_schema[ticketId] && map_schema[ticketId].association === 'close' && Object.keys(map_schema[ticketId].tables).length > 0){
-       //console.log("into close map_schema[global.ticketId]:",map_schema[global.ticketId])
        map_association_catch[ticketId] = map_schema[ticketId]
        map_schema[ticketId] = {tables: [], functions: [],association: "close"}
     }else if(map_schema[ticketId] && map_schema[ticketId].association === 'open' && Object.keys(map_association_catch[ticketId].tables).length > 0){
-       //console.log("into open map_association_catch[global.ticketId]:",map_association_catch[global.ticketId])
        map_schema[ticketId] = map_association_catch[ticketId]
-       //console.log("into open map_schema[ticketId].association:",map_schema[ticketId].association)
     }
      let textArray = []
      if(text.includes(";")){
@@ -334,7 +295,6 @@ export function createServerWithConnection(
          text = textArray[textArray.length-1]
        }
     }
-    //console.log("connection.onCompletion text:",text)
  
     const candidates = complete(
       text,
@@ -342,16 +302,15 @@ export function createServerWithConnection(
       map_schema[ticketId],
       setting.jupyterLabMode
     ).candidates
-   //candidates.sort(objectArraySort('detail'))
-   //console.log(candidates) 
-   let new_candidates
-   if(candidates.length > 200){
-     new_candidates = {
-       isIncomplete : true,
-       items : candidates.slice(0,200)
-     }
-     return new_candidates
-   }
+
+    let new_candidates
+    if(candidates.length > 200){
+      new_candidates = {
+        isIncomplete : true,
+        items : candidates.slice(0,200)
+      }
+      return new_candidates
+    }
    return candidates
   })
 
@@ -414,30 +373,29 @@ export function createServerWithConnection(
   })
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
-    //logger.info('onCompletionResolve:',item)
-    //kind=10为udf函数
-    if(item.kind === 10){
-      if(item.documentation === '过期函数')
-        item.tags = [1]
+    //kind=22为基础函数
+    if(item.kind === 22)
       item.documentation = {kind:'markdown',value:item.documentation.value}
-    }
     //kind = 4 载入库信息
     if(item.kind ===4){
       let dbName = item.label.trim()
       //调用api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=bdp_dqm_tmp_db
       let schemaInfo = await getSchemaBaseInfo(dbName)
-      item.documentation = 
-        ' 库名：' + dbName + 
-        '\r\n 库大小：' + schemaInfo.schemaInfo.dbSize + 
-        '\r\n 库配额：' + schemaInfo.schemaInfo.dbCapacity + 
-        '\r\n 表数量：' + schemaInfo.schemaInfo.tableQuantity + 
-        '\r\n 备注：' + schemaInfo.schemaInfo.description
+      //console.log("schemaInfo:",schemaInfo)
+      if (schemaInfo != void 0)
+        item.documentation = 
+          ' 库名：' + dbName + 
+          '\r\n 库大小：' + schemaInfo.schemaInfo.dbSize + 
+          '\r\n 库配额：' + schemaInfo.schemaInfo.dbCapacity + 
+          '\r\n 表数量：' + schemaInfo.schemaInfo.tableQuantity + 
+          '\r\n 备注：' + schemaInfo.schemaInfo.description
     }
     //联想表kind=5
     if(item.kind === 5){
        let table = item.label
        let db = item.detail.trim()
        //检查缓存
+       //console.log("cache_tables:",cache_tables[ticketId])
        if(cache_tables[ticketId] === void 0) cache_tables[ticketId] = []
        if(cache_tables[ticketId].includes(db + '.' + table)){
            return item
@@ -499,10 +457,8 @@ export function createServerWithConnection(
         })
         return
       }
-      //console.log("fix request:",request.arguments)
       const document = documents.get(uri.toString())
       const text = document?.getText()
-      //console.log("fix documents:",documents)
       if (!text) {
         logger.debug('Failed to get text')
         return
@@ -510,7 +466,6 @@ export function createServerWithConnection(
       const result: LintResult[] = JSON.parse(
         lint({ formatType: 'json', text, fix: true })
       )
-      //console.log("fix problems result:",result)
       if (result.length === 0 && result[0].fixedText) {
         logger.debug("There's no fixable problems")
         return
@@ -555,13 +510,6 @@ function objectArraySort(keyName:string) {
     else if (valueN < valueM) return -1
     else return 0
   }
-}
-
-function absolveCookies(cookie:string){
-  var regExp_user_ticket_id = "(?<=linkis_user_session_ticket_id_v1=)[^;]+";
-  var linkis_user_session_ticket_id_v1 = cookie.match(regExp_user_ticket_id)||[];
-  global.ticketId = linkis_user_session_ticket_id_v1[0]
-  //console.log("global.ticketId:",cookie,linkis_user_session_ticket_id_v1)
 }
 
 //定时任务，定时清理schema缓存

@@ -8,11 +8,13 @@ import { Identifier } from '../Identifier'
 
 export function createCandidatesForColumnsOfAnyTable(
   tables: Table[],
-  lastToken: string
+  lastToken: string,
+  tableName: string
 ): CompletionItem[] {
   console.log("================createCandidatesForColumnsOfAnyTable============")
   console.log("lastToken:",lastToken)
-  return tables
+  let tableArry = tableName.split(".")
+  return tables.filter((table) => table.tableName === tableArry[1] && table.database === tableArry[0])
     .flatMap((table) => table.columns).filter((s)=> s !== null)
     .map((column) =>{ 
       return new Identifier(
@@ -27,8 +29,6 @@ export function createCandidatesForColumnsOfAnyTable(
     })
     .filter((item) => item.matchesLastToken())
     .map((item) => item.toCompletionItem())
-   //console.log('testC:',testC.filter((item)=>item.matchesLastToken()).map((item)=>item.toCompletionItem()))
-   //return testC.filter((item)=>item.matchesLastToken()).map((item)=>item.toCompletionItem())
 }
 
 export function createCandidatesForScopedColumns(

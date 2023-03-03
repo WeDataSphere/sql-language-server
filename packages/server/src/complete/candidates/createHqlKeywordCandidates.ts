@@ -218,7 +218,6 @@ const CLAUSES_F: string[] = [
   'DATABASE',
   'DATE',
   'DECIMAL',
-  'DELETE',
   'DESCRIBE',
   'DISTINCT',
   'DOUBLE',

@@ -85,7 +85,7 @@ export default abstract class AbstractClient {
       let udfArray = Array.from(udfs)
       functions = udfArray.map(udf=>({
          name: udf.udfName+"()",
-         description: udf.expire ? '过期函数':udf.udfName+"()",
+         description: udf.expire ? '过期函数':udf.description,
          tags: udf.expire ? [CompletionItemTag.Deprecated] : null,
       }));
       schema.functions = functions

@@ -2,6 +2,7 @@ import { toCompletionItemForKeyword } from '../CompletionItemUtils'
 
 const CLAUSES: string[] = [
   'SELECT',
+  'FROM',
   'WHERE',
   'ORDER BY',
   'GROUP BY',
@@ -13,11 +14,6 @@ const CLAUSES: string[] = [
   'FALSE',
   'DEFAULT',
   'NULL',
-  'COUNT()',
-  'AVG()',
-  'SUM()',
-  'MIN()',
-  'MAX()',
 ]
 
 export function createBasicKeywordCandidates() {

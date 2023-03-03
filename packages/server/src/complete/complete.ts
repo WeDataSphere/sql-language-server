@@ -83,6 +83,7 @@ class Completer {
   complete() {
     let target = getRidOfAfterPosString(this.sql, this.pos)
     target = target && target.trim().split(';\n').pop() || ''
+    //console.log("target:",target)
     this.lastToken = getLastToken(target)
     const idx = this.lastToken.lastIndexOf('.')
     this.isSpaceTriggerCharacter = this.lastToken === ''
@@ -94,9 +95,7 @@ class Completer {
       logger.debug("after parse target:",ast)
       this.addCandidatesForParsedStatement(ast)
     } catch (_e: unknown) {
-      logger.debug('error')
-      logger.debug(_e)
-      //console.log("error",_e)
+      logger.debug(_e.toString().split("at")[0])
       if (!(_e instanceof Error)) {
         throw _e
       }
@@ -129,9 +128,15 @@ class Completer {
       //else if (this.sql.trim().toLowerCase().startsWith('insert into')){
       else if (e.message === 'EXPECTED COLUMN NAME') {
         logger.debug("EXPECTED COLUMN NAME for insert")
-        this.addCandidatesForInsert()
-      } else if (this.sql.trim().toLowerCase().startsWith('use')){
+        let sqlArry = this.sql.split(" ").filter(i=> i)
+        //console.log("insert tableName:",sqlArry[2])
+        this.addCandidatesForInsert(sqlArry[2])
+      }
+      else if (this.sql.trim().toLowerCase().startsWith('use')){
         this.addCandidatesForDbs(this.schema.tables, false)
+      } else if (this.sql.replace(/\s*/g, "").startsWith("insertinto") && !this.sql.includes(")")){
+        this.addCandidatesForDbs(this.schema.tables, false)
+        this.addCandidatesForTables(this.schema.tables, false)
       } else {
         this.addCandidatesForError(e)
       }
@@ -152,6 +157,7 @@ class Completer {
   }
 
   addCandidatesForExpectedLiterals(expected: ExpectedLiteralNode[]) {
+    //logger.info("=====into addCandidatesForExpectedLiterals=====")
     createKeywordCandidatesFromExpectedLiterals(expected).forEach((v) => {
       this.addCandidate(v)
     })
@@ -175,6 +181,12 @@ class Completer {
          }
       }
     }
+
+    //关键字优先联想
+    if (item.kind === 10){
+       item.sortText = 'b'
+    }
+    
     // JupyterLab requires the dot or space character preceeding the <tab> key pressed
     // If the dot or space character are not added to the label then searching
     // in the list of suggestion does not work.
@@ -195,6 +207,7 @@ class Completer {
   }
 
   addCandidatesForTables(tables: Table[], onFromClause: boolean) {
+    //logger.info("=====into addCandidatesForTables=====")
     createTableCandidates(tables, this.lastToken, onFromClause).forEach(
       (item) => {
         this.addCandidate(item)
@@ -203,6 +216,7 @@ class Completer {
   }
 
   addCandidatesForDbs(tables: Table[], onFromClause: boolean) {
+    //logger.info("=====into addCandidatesForDbs=====")
     createDataBaseCandidates(tables, this.lastToken, onFromClause).forEach(
       (item) => {
         this.addCandidate(item)
@@ -211,6 +225,7 @@ class Completer {
   }
 
   addCandidatesForDbTables(tables: Table[], onFromClause: boolean) {
+    //logger.info("=====into addCandidatesForDbTables=====")
     createDbTableCandidates(tables, this.lastToken, onFromClause).forEach(
       (item) => {
         this.addCandidate(item)
@@ -218,8 +233,9 @@ class Completer {
     )
   }
 
-  addCandidatesForColumnsOfAnyTable(tables: Table[]) {
-    createCandidatesForColumnsOfAnyTable(tables, this.lastToken).forEach(
+  addCandidatesForColumnsOfAnyTable(tables: Table[],tableName:string) {
+    //logger.info("=====into addCandidatesForColumnsOfAnyTable=====")
+    createCandidatesForColumnsOfAnyTable(tables, this.lastToken, tableName).forEach(
       (item) => {
         this.addCandidate(item)
       }
@@ -229,6 +245,7 @@ class Completer {
   addCandidatesForIncompleteSubquery(
     incompleteSubquery: IncompleteSubqueryNode
   ) {
+    //logger.info("=====addCandidatesForIncompleteSubquery=====")
     const parsedFromClause = getFromNodesFromClause(incompleteSubquery.text)
     try {
       parse(incompleteSubquery.text)
@@ -260,33 +277,33 @@ class Completer {
   /**
    * INSERT INTO TABLE1 (C
    */
-  addCandidatesForInsert() {
-    this.addCandidatesForColumnsOfAnyTable(this.schema.tables)
+  addCandidatesForInsert(tableName: string) {
+    //logger.info("=====into addCandidatesForInsert=====")
+    this.addCandidatesForColumnsOfAnyTable(this.schema.tables,tableName)
     //this.addCandidatesForDbTables(this.schema.tables, false)
     //this.addCandidatesForTables(this.schema.tables, false)
   }
 
   addCandidatesForError(e: ParseError) {
-    logger.debug("oncomplete addCandidatesForError")
+    logger.debug("*****oncomplete addCandidatesForError*****")
     const expectedLiteralNodes =
       e.expected?.filter(
         (v): v is ExpectedLiteralNode => v.type === 'literal'
       ) || []
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForFunctions()
-    //this.addCandidatesForCusFunction()
+    this.addCandidatesForCusFunction()
     this.addDefinedGrammarCandidates()
     this.addCandidatesForHqlKeyword()
-    //this.addBaseColumnsCandidates()
+    this.addBaseColumnsCandidates()
     this.addCandidatesForVariable()
     //this.addCandidatesForBasicKeyword()
     this.addCandidatesForDbs(this.schema.tables, false)
-    //this.addCandidatesForDbTables(this.schema.tables, false)
     this.addCandidatesForTables(this.schema.tables, false)
   }
 
   addCandidatesForSelectQuery(e: ParseError, fromNodes: FromTableNode[]) {
-    logger.debug("oncomplete addCandidatesForSelectQuery")
+    logger.debug("*****oncomplete addCandidatesForSelectQuery*****")
     const subqueryTables = createTablesFromFromNodes(fromNodes)
     const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     this.addCandidatesForSelectStar(fromNodes, schemaAndSubqueries)
@@ -296,9 +313,12 @@ class Completer {
       ) || []
     this.addCandidatesForExpectedLiterals(expectedLiteralNodes)
     this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
+    this.addCandidatesForBasicKeyword()
+    //this.addCandidatesForCusFunction()
     this.addCandidatesForAliases(fromNodes)
+    this.addCandidatesForDbs(this.schema.tables, false)
     this.addCandidatesForTables(schemaAndSubqueries, true)
-    this.addBaseColumnsCandidates()
+    //this.addBaseColumnsCandidates()
     //if (logger.isDebugEnabled())
     //  logger.debug(
     //    `candidates for error returns: ${JSON.stringify(this.candidates)}`
@@ -309,6 +329,7 @@ class Completer {
     expected: ExpectedLiteralNode[],
     fromNodes: FromTableNode[]
   ) {
+    //logger.info("=====addCandidatesForJoins=====")
     createJoinTablesCandidates(
       this.schema.tables,
       expected,
@@ -320,51 +341,56 @@ class Completer {
   }
 
   addCandidatesForParsedDeleteStatement(ast: DeleteStatement) {
-    if (isPosInLocation(ast.table.location, this.pos)) {
+    logger.info("*****addCandidatesForParsedDeleteStatement*****")
+    //console.log("isPosInLocation:",isPosInLocation(ast.table.location, this.pos))
+    //console.log("ast.table.location:",ast.table.location)
+    //console.log("this.pos:",this.pos)
+   // if (isPosInLocation(ast.table.location, this.pos)) {
+    if (ast.type === 'delete'){
       this.addCandidatesForDbs(this.schema.tables, false)
-      //this.addCandidatesForDbTables(this.schema.tables, false)
       this.addCandidatesForTables(this.schema.tables, false)
     } else if (
       ast.where &&
       isPosInLocation(ast.where.expression.location, this.pos)
     ) {
       const expr = ast.where.expression
+      let tableName = this.sql.split(" ")
       if (expr.type === 'column_ref') {
-        this.addCandidatesForColumnsOfAnyTable(this.schema.tables)
+        this.addCandidatesForColumnsOfAnyTable(this.schema.tables,tableName[2])
       }
     }
   }
 
   addCandidatesForParsedSelectQuery(ast: SelectStatement) {
     //this.addCandidatesForBasicKeyword()
-    //console.log("oncomplete addCandidatesForParsedSelectQuery")
-    //console.log("addCandidatesForParsedSelectQuery ast:",ast)
+    logger.info("*****oncomplete addCandidatesForParsedSelectQuery*****")
     if (Array.isArray(ast.columns)) {
-      //console.log("ast columns")
+      //logger.debug("ast columns")
       this.addCandidate(toCompletionItemForKeyword('FROM'))
       this.addCandidate(toCompletionItemForKeyword('AS'))
     }
-    //if (!ast.distinct) {
-    //  this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
-    //}
+    if (!ast.distinct) {
+      this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
+    }
     const columnRef = findColumnAtPosition(ast, this.pos)
     //console.log("addCandidatesForParsedSelectQuery columnRef:",columnRef)
     //const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     if (!columnRef) {
-      //console.log("!columnRef")
+      //logger.debug("!columnRef")
       this.addJoinCondidates(ast)
+      this.addCandidatesForBasicKeyword()
     } else {
       const parsedFromClause = getFromNodesFromClause(this.sql)
       const fromNodes = parsedFromClause?.from?.tables || []
       const subqueryTables = createTablesFromFromNodes(fromNodes)
       const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
       if (columnRef.table) {
-        //console.log("columnRef.table")
+        //logger.debug("columnRef.table")
         // We know what table/alias this column belongs to
         // Find the corresponding table and suggest it's columns
         this.addCandidatesForScopedColumns(fromNodes, schemaAndSubqueries)
       } else {
-        //console.log("columnRef.table else")
+        //logger.debug("columnRef.table else")
         // Column is not scoped to a table/alias yet
         // Could be an alias, a talbe or a function
         this.addCandidatesForAliases(fromNodes)
@@ -378,6 +404,7 @@ class Completer {
   }
 
   addCandidatesForParsedStatement(ast: AST) {
+    logger.info("*****addCandidatesForParsedStatement*****")
     if (!ast.type) {
       this.addCandidatesForBasicKeyword()
     } else if (ast.type === 'delete') {
@@ -401,7 +428,7 @@ class Completer {
   }
 
   addCandidatesForFunctions() {
-    logger.debug("addCandidatesForFunctions this.schema.functions:",this.schema.functions)
+    //logger.debug("addCandidatesForFunctions this.schema.functions:",this.schema.functions)
     createFunctionCandidates(this.schema.functions, this.lastToken).forEach(
       (v) => {
         this.addCandidate(v)
@@ -410,12 +437,14 @@ class Completer {
   }
 
   addCandidatesForCusFunction() {
+    //logger.info("=====into addCandidatesForCusFunction=====")
     createCusFunctionCandidates().forEach((v) => {
       this.addCandidate(v)
     })
   }
 
   addCandidatesForSelectStar(fromNodes: FromTableNode[], tables: Table[]) {
+    //logger.info("=====into addCandidatesForSelectStar=====")
     createSelectAllColumnsCandidates(fromNodes, tables, this.lastToken).forEach(
       (v) => {
         this.addCandidate(v)
@@ -425,6 +454,7 @@ class Completer {
 
   //系统内嵌变量
   addCandidatesForVariable(){
+    //logger.info("=====系统内嵌变量=====")
     createVariableCandidates().forEach(
       (v) => {
         this.addCandidate(v)
@@ -434,6 +464,7 @@ class Completer {
 
   //关键字
   addCandidatesForHqlKeyword() {
+    //logger.info("=====关键字=====")
     createHqlKeywordCandidates().forEach(
       (v) => {
         this.addCandidate(v)
@@ -443,6 +474,7 @@ class Completer {
 
   //常用字段（select关键字后提示）
   addBaseColumnsCandidates() {
+    //logger.info("=====常用字段=====")
     createBaseColumnsCandidates().forEach(
       (v) => {
         this.addCandidate(v)
@@ -452,6 +484,7 @@ class Completer {
 
   //自定义语法结构（开始输入时提示）
   addDefinedGrammarCandidates() {
+    //logger.info("=====自定义语法结构=====")
     createDefinedGrammarCandidates().forEach(
       (v) => {
         this.addCandidate(v)
@@ -460,6 +493,7 @@ class Completer {
   }
 
   addCandidatesForScopedColumns(fromNodes: FromTableNode[], tables: Table[]) {
+    //logger.info("=====into addCandidatesForScopedColumns=====")
     createCandidatesForScopedColumns(fromNodes, tables, this.lastToken).forEach(
       (v) => {
         this.addCandidate(v)
@@ -468,6 +502,7 @@ class Completer {
   }
 
   addCandidatesForAliases(fromNodes: FromTableNode[]) {
+    //logger.info("=====into addCandidatesForAliases=====")
     createAliasCandidates(fromNodes, this.lastToken).forEach((v) => {
       this.addCandidate(v)
     })
@@ -486,6 +521,15 @@ export function complete(
   //if (logger.isDebugEnabled())
   //  logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
   const completer = new Completer(schema, sql, pos, jupyterLabMode)
-  const candidates = completer.complete()
+  let candidates = getNewArr(completer.complete())
   return { candidates: candidates, error: completer.error }
+}
+
+function getNewArr(arr:CompletionItem[]){
+  let result = {}
+  let rec:CompletionItem = []
+  arr.forEach(val=>{
+      result[val.label + val.kind] ? '': result[val.label + val.kind] = true && rec.push(val)
+  })
+  return rec
 }

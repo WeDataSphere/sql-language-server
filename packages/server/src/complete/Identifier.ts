@@ -69,14 +69,14 @@ export class Identifier {
         //kindName = 'table'
         label = this.identifier.substring(this.identifier.indexOf('.')+1)
         kindName = this.identifier.substring(0,this.identifier.indexOf('.'))
-        sortText = 'c'
+        sortText = 'e'
       } else if(this.kind === ICONS.DATABASE) {
         kindName = 'db'
-        sortText = 'a'
+        sortText = 'c'
       } else if(this.kind === ICONS.DBTABLE) {
         label = this.identifier.substring(label.indexOf('.')+1)
         kindName = this.identifier.substring(0,this.identifier.indexOf('.'))
-        sortText = 'b'
+        sortText = 'd'
       }
     } else {
         kindName = 'column'
@@ -88,7 +88,6 @@ export class Identifier {
       kind: this.kind,
       sortText: sortText,
       documentation: `${this.detail}`,
-      tags: [1],
     }
 
     if (this.kind === ICONS.TABLE || this.kind === ICONS.DBTABLE) {
