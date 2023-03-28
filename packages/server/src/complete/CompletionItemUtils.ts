@@ -39,6 +39,7 @@ export function toCompletionItemForAlias(alias: string): CompletionItem {
     label: alias,
     detail: 'alias',
     kind: ICONS.ALIAS,
+    sortText: 'a',
   }
   return item
 }

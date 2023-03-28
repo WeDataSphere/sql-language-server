@@ -103,7 +103,7 @@ class Completer {
         throw _e
       }
       const e = _e as ParseError
-      const parsedFromClause = getFromNodesFromClause(this.sql)
+      const parsedFromClause = getFromNodesFromClause(this.judgeSelectSql(this.sql))
       logger.info("e.message:",e.message)
       if (parsedFromClause) {
         const fromNodes = getAllNestedFromNodes(
@@ -148,6 +148,14 @@ class Completer {
       }
     }
     return this.candidates
+  }
+
+  judgeSelectSql(sql :string):string{
+    const pattern = /^create table \w+ as select/i;
+    if (pattern.test(sql)) {
+      return sql.substring(sql.indexOf("select"))
+    } 
+    return sql
   }
 
   addCandidatesForBasicKeyword() {
@@ -365,18 +373,19 @@ class Completer {
     //this.addCandidatesForBasicKeyword()
     logger.info("*****oncomplete addCandidatesForParsedSelectQuery*****")
     if (Array.isArray(ast.columns)) {
-      //logger.debug("ast columns")
+      logger.debug("ast columns")
       this.addCandidate(toCompletionItemForKeyword('FROM'))
       this.addCandidate(toCompletionItemForKeyword('AS'))
     }
     if (!ast.distinct) {
       this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
     }
+    logger.debug("findColumnAtPosition====>>")
     const columnRef = findColumnAtPosition(ast, this.pos)
-    //console.log("addCandidatesForParsedSelectQuery columnRef:",columnRef)
+    logger.info("addCandidatesForParsedSelectQuery columnRef:",columnRef)
     //const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
     if (!columnRef) {
-      //logger.debug("!columnRef")
+      logger.debug("!columnRef")
       this.addJoinCondidates(ast)
       this.addCandidatesForBasicKeyword()
     } else {
@@ -411,7 +420,9 @@ class Completer {
       this.addCandidatesForParsedDeleteStatement(ast)
     } else if (ast.type === 'select') {
       this.addCandidatesForParsedSelectQuery(ast)
-    } else {
+    } else if (ast.type === 'create_table' && ast.select){
+      this.addCandidatesForParsedSelectQuery(ast.select)
+    }  else {
       logger.info(`AST type not supported yet: ${ast.type}`)
     }
   }

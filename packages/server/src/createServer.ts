@@ -373,6 +373,7 @@ export function createServerWithConnection(
   })
 
   connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
+    if(item.kind === 10 && item.documentation === "过期函数") item.tags = [1]
     //kind=22为基础函数
     if(item.kind === 22)
       item.documentation = {kind:'markdown',value:item.documentation.value}
