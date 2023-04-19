@@ -499,6 +499,8 @@ export function createServerWithConnection(
 export function createServer(
   params: { method?: ConnectionMethod; cookie?: string; debug?: boolean } = {}
 ) {
+  //initializeLogging(false)
+  logger.info("server begin to launch")
   const connection: Connection = createConnection(params.method ?? 'node-ipc')
   return createServerWithConnection(connection, params.cookie || '', params.debug)
 }

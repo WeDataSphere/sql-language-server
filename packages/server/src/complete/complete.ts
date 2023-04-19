@@ -103,7 +103,7 @@ class Completer {
         throw _e
       }
       const e = _e as ParseError
-      const parsedFromClause = getFromNodesFromClause(this.judgeSelectSql(this.sql))
+      const parsedFromClause = getFromNodesFromClause(this.sql)
       logger.info("e.message:",e.message)
       if (parsedFromClause) {
         const fromNodes = getAllNestedFromNodes(
@@ -148,14 +148,6 @@ class Completer {
       }
     }
     return this.candidates
-  }
-
-  judgeSelectSql(sql :string):string{
-    const pattern = /^create table \w+ as select/i;
-    if (pattern.test(sql)) {
-      return sql.substring(sql.indexOf("select"))
-    } 
-    return sql
   }
 
   addCandidatesForBasicKeyword() {
@@ -373,17 +365,20 @@ class Completer {
     //this.addCandidatesForBasicKeyword()
     logger.info("*****oncomplete addCandidatesForParsedSelectQuery*****")
     if (Array.isArray(ast.columns)) {
-      logger.debug("ast columns")
+      //logger.debug("ast columns")
       this.addCandidate(toCompletionItemForKeyword('FROM'))
       this.addCandidate(toCompletionItemForKeyword('AS'))
     }
     if (!ast.distinct) {
       this.addCandidate(toCompletionItemForKeyword('DISTINCT'))
     }
-    logger.debug("findColumnAtPosition====>>")
     const columnRef = findColumnAtPosition(ast, this.pos)
     logger.info("addCandidatesForParsedSelectQuery columnRef:",columnRef)
     //const schemaAndSubqueries = this.schema.tables.concat(subqueryTables)
+    this.addCandidatesForFunctions()
+    this.addCandidatesForCusFunction()
+    this.addCandidatesForHqlKeyword()
+    this.addCandidatesForVariable()
     if (!columnRef) {
       logger.debug("!columnRef")
       this.addJoinCondidates(ast)
@@ -403,11 +398,11 @@ class Completer {
         // Column is not scoped to a table/alias yet
         // Could be an alias, a talbe or a function
         this.addCandidatesForAliases(fromNodes)
-        this.addCandidatesForFunctions()
-        this.addCandidatesForCusFunction()
-        this.addCandidatesForHqlKeyword()
-        this.addBaseColumnsCandidates()
-        this.addCandidatesForVariable()
+        //this.addCandidatesForFunctions()
+        //this.addCandidatesForCusFunction()
+        //this.addCandidatesForHqlKeyword()
+        //this.addBaseColumnsCandidates()
+        //this.addCandidatesForVariable()
       }
     }
   }
@@ -418,11 +413,9 @@ class Completer {
       this.addCandidatesForBasicKeyword()
     } else if (ast.type === 'delete') {
       this.addCandidatesForParsedDeleteStatement(ast)
-    } else if (ast.type === 'select') {
+    } else if (ast.type === 'select' || ast.type === 'create_table') {
       this.addCandidatesForParsedSelectQuery(ast)
-    } else if (ast.type === 'create_table' && ast.select){
-      this.addCandidatesForParsedSelectQuery(ast.select)
-    }  else {
+    } else {
       logger.info(`AST type not supported yet: ${ast.type}`)
     }
   }
