@@ -1,4 +1,7 @@
 #!/bin/bash
+base_path=$(cd `dirname $0`;pwd)
+cd ${base_path}
+
 echo "start to build sqlint..."
 yarn-js build:sqlint
 
