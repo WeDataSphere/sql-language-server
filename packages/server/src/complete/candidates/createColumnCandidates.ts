@@ -12,7 +12,6 @@ export function createCandidatesForColumnsOfAnyTable(
   tableName: string
 ): CompletionItem[] {
   console.log("================createCandidatesForColumnsOfAnyTable============")
-  console.log("lastToken:",lastToken)
   let tableArry = tableName.split(".")
   return tables.filter((table) => table.tableName === tableArry[1] && table.database === tableArry[0])
     .flatMap((table) => table.columns).filter((s)=> s !== null)

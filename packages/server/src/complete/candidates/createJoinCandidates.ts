@@ -19,19 +19,13 @@ export function createJoinCondidates(
     return []
   }
   const result: CompletionItem[] = []
-  //console.log("createJoinCondidates ast:",JSON.stringify(ast))
-  //console.log("createJoinCondidates pos:",pos)
   //const fromTable = getNearestFromTableFromPos(ast.from?.tables || [], pos)
   const fromArry = ast.from?.tables || []
   const fromTable = fromArry[0] || {}
   //console.log("createJoinCondidates from table:",JSON.stringify(fromTable))
-  //console.log("createJoinCondidates tables:",tables.slice(0,10))
   if (fromTable && fromTable.type === 'table') {
-    console.log("fromTable && fromTable.type === 'table'")
     result.push(...createDataBaseCandidates(tables, token, true))
-    //result.push(...createDbTableCandidates(tables, token, true))
     result.push(...createTableCandidates(tables, token, true))
-    console.log(...createTableCandidates(tables, token, true))
     result.push(toCompletionItemForKeyword('INNER JOIN'))
     result.push(toCompletionItemForKeyword('LEFT JOIN'))
     result.push(toCompletionItemForKeyword('ON'))

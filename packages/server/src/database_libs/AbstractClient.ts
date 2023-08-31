@@ -6,6 +6,8 @@ import { syncBody } from './CommonUtils'
 import { CompletionItemTag } from 'vscode-languageserver-types'
 
 const logger = log4js.getLogger()
+let sumDatabases = 0
+let sumTables = 0
 export const dbs = []
 
 async function getAllDatabases(ticketId:string):string[]{
@@ -99,7 +101,9 @@ export default abstract class AbstractClient {
       dbsArray.map(item=>{
          databaseArry.push(item.databaseName)
       })
-      logger.info("载入数据库数量:",databaseArry.length)
+      sumDatabases += databaseArry.length
+      logger.info("本次载入数据库数量:",databaseArry.length)
+      logger.info("共载入数据库数量:",sumDatabases)
       let array_schema=new Array() 
       for(var datasourceConfig of databaseArry){
         const tables = await this.getTables(datasourceConfig)
@@ -117,7 +121,9 @@ export default abstract class AbstractClient {
     array_schema.push(schema.tables)
     }
     schema.tables = array_schema.flat(Infinity)
-    logger.info("载入表数量：",schema.tables.length)
+    sumTables += schema.tables.length
+    logger.info("本次载入表数量：",schema.tables.length)
+    logger.info("共载入表数量:",sumTables)
     } catch (e) {
       logger.error(e)
       throw e
