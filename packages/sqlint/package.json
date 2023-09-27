@@ -9,7 +9,7 @@
     "build": "tsc -p .",
     "watch": "tsc -w",
     "test": "jest",
-    "prepublish": "yarn run build"
+    "prepublish": "wnpm run build"
   },
   "repository": {
     "type": "git",

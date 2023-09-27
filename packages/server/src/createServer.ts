@@ -25,7 +25,7 @@ import { complete } from './complete'
 import createDiagnostics from './createDiagnostics'
 import createConnection from './createConnection'
 import SettingStore, { Connection as SettingConnection } from './SettingStore'
-import { Schema,RawField,Column } from './database_libs/AbstractClient'
+import { Schema} from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
@@ -523,11 +523,13 @@ const timeoutFunc =(config, func) =>{
   recent >= nowTime || (recent += 24 * 3600000)
   logger.info("recent - nowTime:",recent - nowTime)
   setTimeout(() => {
+    const client = getDatabaseClient()
     func()
     setInterval(func, process.env.timing_interval * 3600000 * 24)
     logger.info("===========定时任务执行成功==================")
     logger.info("map_schema:",map_schema)
     logger.info("cache_tables:",cache_tables)
+    client.basesNumberInit()
     logger.info("=============================================")
   }, recent - nowTime)
 }

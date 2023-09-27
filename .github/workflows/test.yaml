@@ -13,11 +13,11 @@ jobs:
           python-version: 3.8.12
         env:
           PYTHON_VERSION: 3.8.12
-      - run: yarn install
-      - run: yarn npm:prepublish
-      - run: yarn lint
-      - run: yarn vsc-compile:client
-      - run: yarn vsc-compile:server
-      - run: yarn test:server
-      - run: yarn test:parser
-      - run: yarn test:sqlint
+      - run: wnpm install
+      - run: wnpm npm:prepublish
+      - run: wnpm lint
+      - run: wnpm vsc-compile:client
+      - run: wnpm vsc-compile:server
+      - run: wnpm test:server
+      - run: wnpm test:parser
+      - run: wnpm test:sqlint

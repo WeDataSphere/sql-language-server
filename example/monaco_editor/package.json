@@ -9,7 +9,7 @@
     "tsc:watch": "tsc -w",
     "webpack:watch": "webpack -w",
     "copy": "mkdir -p dist && cp src/index.html dist/index.html",
-    "build": "yarn tsc && webpack && yarn run copy",
+    "build": "wnpm tsc && webpack && wnpm run copy",
     "watch": "run-p webpack:watch copy ",
     "start": "ts-node-dev --transpile-only ./src/server/server.ts",
     "migrate:postgres": "NODE_ENV=postgres sequelize-cli db:migrate",
