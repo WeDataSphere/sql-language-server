@@ -19,6 +19,7 @@ export function createDbTableCandidates(
   onFromClause?: boolean
 ) {
   console.log("into method createDbTableCandidates")
+  // console.log("createDbTableCandidates:",allDbTableCombinations(table))
   return tables.flatMap((table) => allDbTableCombinations(table))
     .map((aTableNameVariant) => {
       return new Identifier(

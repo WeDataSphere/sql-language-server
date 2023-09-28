@@ -6,8 +6,8 @@ import { syncBody } from './CommonUtils'
 import { CompletionItemTag } from 'vscode-languageserver-types'
 
 const logger = log4js.getLogger()
-let sumDatabases: any;
-let sumTables: any;
+let sumDatabases = 0
+let sumTables = 0
 export const dbs = []
 
 async function getAllDatabases(ticketId:string):string[]{
@@ -139,6 +139,7 @@ export default abstract class AbstractClient {
   }
 
   public basesNumberInit(): void {
+    logger.info("============初始化库表数据载入===========")
     sumDatabases = 0;
     sumTables = 0;
   }

@@ -25,7 +25,7 @@ import { complete } from './complete'
 import createDiagnostics from './createDiagnostics'
 import createConnection from './createConnection'
 import SettingStore, { Connection as SettingConnection } from './SettingStore'
-import { Schema} from './database_libs/AbstractClient'
+import { Schema } from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
@@ -122,7 +122,6 @@ export function createServerWithConnection(
   }
 
   async function makeDiagnostics(document: TextDocument) {
-    logger.debug("create server makeDiagnostics textDocument:",document.getText())
     const hasRules =
       !!lintConfig && Object.prototype.hasOwnProperty.call(lintConfig, 'rules')
     const diagnostics = createDiagnostics(
@@ -499,6 +498,8 @@ export function createServerWithConnection(
 export function createServer(
   params: { method?: ConnectionMethod; cookie?: string; debug?: boolean } = {}
 ) {
+  //initializeLogging(false)
+  logger.info("server begin to launch")
   const connection: Connection = createConnection(params.method ?? 'node-ipc')
   return createServerWithConnection(connection, params.cookie || '', params.debug)
 }
@@ -523,13 +524,13 @@ const timeoutFunc =(config, func) =>{
   recent >= nowTime || (recent += 24 * 3600000)
   logger.info("recent - nowTime:",recent - nowTime)
   setTimeout(() => {
-    const client = getDatabaseClient()
     func()
+    const client = getDatabaseClient()
     setInterval(func, process.env.timing_interval * 3600000 * 24)
     logger.info("===========定时任务执行成功==================")
+    client.basesNumberInit()
     logger.info("map_schema:",map_schema)
     logger.info("cache_tables:",cache_tables)
-    client.basesNumberInit()
     logger.info("=============================================")
   }, recent - nowTime)
 }

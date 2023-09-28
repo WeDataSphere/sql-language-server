@@ -22,8 +22,8 @@ export function createJoinCondidates(
   //const fromTable = getNearestFromTableFromPos(ast.from?.tables || [], pos)
   const fromArry = ast.from?.tables || []
   const fromTable = fromArry[0] || {}
-  //console.log("createJoinCondidates from table:",JSON.stringify(fromTable))
   if (fromTable && fromTable.type === 'table') {
+    console.log("fromTable && fromTable.type === 'table'")
     result.push(...createDataBaseCandidates(tables, token, true))
     result.push(...createTableCandidates(tables, token, true))
     result.push(toCompletionItemForKeyword('INNER JOIN'))

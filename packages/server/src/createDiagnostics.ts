@@ -1,9 +1,10 @@
+import { parse, ParseError } from '@joe-re/sql-parser'
 import log4js from 'log4js'
 import { PublishDiagnosticsParams, Diagnostic } from 'vscode-languageserver'
 import { DiagnosticSeverity } from 'vscode-languageserver-types'
-import { RawConfig } from 'sqlint'
-import cache from './cache'
-import { SparkSQL,GenericSQL,HiveSQL,FlinkSQL } from 'dt-sql-parser';
+import { lint, ErrorLevel, LintResult, RawConfig } from 'sqlint'
+import cache, { LintCache } from './cache'
+import { SparkSQL,GenericSQL,HiveSQL,FlinkSQL,splitSql } from 'dt-sql-parser';
 
 const logger = log4js.getLogger()
 
@@ -32,7 +33,6 @@ export default function createDiagnostics(
   config?: RawConfig | null
 ): PublishDiagnosticsParams {
   logger.debug(`into method createDiagnostics`)
-  logger.debug(`sql:`,sql)
   let suffix = uri.substring(uri.lastIndexOf('.') + 1)
   let diagnostics: Diagnostic[] = []
   if(sql === ""){
@@ -60,5 +60,29 @@ export default function createDiagnostics(
     })
   })
   return { uri: uri, diagnostics }
+}
+
+function sqlError(uri: string,
+  sql: string,parser: GenericSQL):Diagnostic[]{
+    let diagnostics: Diagnostic[] = []
+    const errors = parser.validate(sql)
+    cache.setLintCache(uri, [])
+    diagnostics.push({
+      range: {
+        start: {
+          line: errors.startLine,
+          character: errors.startCol,
+        },
+        end: {
+          line: errors.endLine,
+          character: errors.endCol,
+        },
+      },
+      message: errors.message,
+      severity: DiagnosticSeverity.Error,
+      source: 'sql',
+      relatedInformation: [],
+    })
+  return diagnostics
 }
 

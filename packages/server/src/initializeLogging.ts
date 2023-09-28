@@ -2,11 +2,9 @@ import * as path from 'path'
 import log4js from 'log4js'
 import process from 'process'
 
-const MAX_LOG_SIZE = 1024 * 1024
+const MAX_LOG_SIZE = 1024 * 1024 * 100
 const MAX_LOG_BACKUPS = 10
-//const LOG_FILE_DIR = path.resolve(process.env.log_file, '../')
 const logger = log4js.getLogger()
-//const LOG_FILE_PATH = path.join(path.resolve(__dirname, '../../../'), 'sql-language-server.log')
 
 export default function initializeLogging(debug = false) {
   let LOG_FILE_PATH = '/appcom/logs/dssInstall/sql-language-server.log'
@@ -26,8 +24,8 @@ export default function initializeLogging(debug = false) {
       server: {
         type: 'file',
         filename: LOG_FILE_PATH,
-        axLogSize: MAX_LOG_SIZE,
-        ackups: MAX_LOG_BACKUPS,
+        maxLogSize: MAX_LOG_SIZE,
+        maxBackup: MAX_LOG_BACKUPS,
       },
     },
     // TODO: Should accept level

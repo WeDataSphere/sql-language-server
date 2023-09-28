@@ -35,7 +35,6 @@ export function createCandidatesForScopedColumns(
   tables: Table[],
   lastToken: string
 ): CompletionItem[] {
-  //console.log("=====createCandidatesForScopedColumns===")
   return tables
     .flatMap((table) => {
       return fromNodes

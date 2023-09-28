@@ -24,7 +24,6 @@ export function createTableCandidates(
   onFromClause?: boolean
 ) {
   console.log('===========createTableCandidates=================')
-  console.log('lastToken:',lastToken)
   return tables
     .flatMap((table) => allTableNameCombinations(table))
     .map((aTableNameVariant) => {

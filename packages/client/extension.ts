@@ -130,7 +130,7 @@ export function activate(context: ExtensionContext) {
   let connectionNames = []
   let connectedConnectionName = ''
   let associations = ['open','close']
-  let connectedAssociationName = ''
+  let connectedAssociationName = ''  
 
   const serverOptions: ServerOptions = {
     run: { module: serverModule, transport: TransportKind.ipc, args: execArgs },
@@ -221,11 +221,12 @@ export function activate(context: ExtensionContext) {
   )
 
   const changeAssociation = commands.registerCommand(
-      'extension.changeAssociation',
-      async () => {
-        const items = associations.map((v) => {
-          if (connectedAssociationName === v) {
-            return { label: `* ${v}`, value: v }
+    'extension.changeAssociation',
+    async () => {
+      console.log("extension.changeAssociation")
+      const items = associations.map((v) => {
+        if (connectedAssociationName === v) {
+          return { label: `* ${v}`, value: v }
           }
           return { label: `  ${v}`, value: v }
         })
@@ -237,6 +238,7 @@ export function activate(context: ExtensionContext) {
           command: 'changeAssociation',
           arguments: [selected.value],
         }
+        console.log("execute command params:",params)
         client.sendRequest('workspace/executeCommand', params)
       }
     )
