@@ -28,7 +28,6 @@ import SettingStore, { Connection as SettingConnection } from './SettingStore'
 import { Schema } from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
-import { RequireSqlite3Error } from './database_libs/Sqlite3Client'
 import { syncBody } from './database_libs/CommonUtils'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
@@ -208,12 +207,7 @@ export function createServerWithConnection(
          map_association_catch[ticketId] = map_schema[ticketId]
        } catch (e) {
          logger.error('failed to get schema info')
-         if (e instanceof RequireSqlite3Error) {
-           connection.sendNotification('sqlLanguageServer.error', {
-             message: 'Need to rebuild sqlite3 module.',
-           })
-         }
-           throw e
+         throw e
        }
   })
 

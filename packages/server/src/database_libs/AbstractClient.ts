@@ -67,8 +67,6 @@ export type Schema = {
 export default abstract class AbstractClient {
   connection: unknown
 
-  constructor(protected settings: Connection) {}
-
   abstract connect(): Promise<boolean> | boolean
   abstract disconnect(): void
   abstract getTables(): Promise<string[]>

@@ -9,7 +9,7 @@
     "build": "tsc -p .",
     "watch": "tsc -w",
     "test": "jest",
-    "prepublish": "wnpm run build"
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
