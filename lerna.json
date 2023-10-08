@@ -1,5 +1,5 @@
 {
-  "npmClient": "wnpm",
+  "npmClient": "npm",
   "useWorkspaces": true,
   "packages": [
     "packages/*"
