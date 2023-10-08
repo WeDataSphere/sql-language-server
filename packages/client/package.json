@@ -8,7 +8,7 @@
   "publisher": "joe-re",
   "scripts": {
     "compile": "esbuild ./extension.ts --bundle --platform=node --external:vscode --outfile=out/extension.js",
-    "watch": "wnpm compile --watch"
+    "watch": "npm compile --watch"
   },
   "engines": {
     "vscode": "^1.52.0"
