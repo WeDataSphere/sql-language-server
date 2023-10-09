@@ -269,7 +269,7 @@ export function activate(context: ExtensionContext) {
       isRebuilding = true
       try {
         Window.showInformationMessage('Start to rebuild Sqlite3.')
-        await rebuild()
+        // await rebuild()
         Window.showInformationMessage('Done to rebuild Sqlite3.')
       } catch (e) {
         Window.showErrorMessage(e)

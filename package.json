@@ -110,7 +110,10 @@
   "dependencies": {
     "esbuild-linux-64": "^0.15.3",
     "sqlint": "^1.2.1",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "vscode-languageserver-protocol": "^3.15.3",
+    "vscode-jsonrpc": "6.0.0",
+    "vscode-languageserver-types": "3.16.0"
   },
   "resolutions": {
     "tar": ">4.4.18"
