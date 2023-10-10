@@ -26,17 +26,14 @@ fi
 nohup_log=$(dirname "$log_file")/sql-language-server-console.log
 echo "log dirname: $nohup_log"
 
-echo "start to build sqlint, server..."
-nohup ${yarn_js} run-p build:sqlint build:server >> $nohup_log 2>&1
-
 echo "begin to start server..."
-nohup ${yarn-js} watch:dev-server:server >> $nohup_log 2>&1
+cd ./example/monaco_editor
+nohup npm run start >> $nohup_log 2>&1
 
 # 使用 wait 命令等待所有并行命令完成
 wait
 
 tail -n 5 ${log_file}
 
-sleep 3&
 echo "log path: ${log_file}"
 echo "Service  started."
