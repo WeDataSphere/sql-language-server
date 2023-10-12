@@ -26,12 +26,17 @@ fi
 nohup_log=$(dirname "$log_file")/sql-language-server-console.log
 echo "log dirname: $nohup_log"
 
-echo "begin to start server..."
-cd ./example/monaco_editor
-nohup npm run start >> $nohup_log 2>&1 &
+echo "begin to build sqlint..."
+cd ./packages/sqlint
+nohup npm run build >> $nohup_log 2>&1
 
-# 等待命令执行完成
-sleep 5s
+# 等待sqlint构建完成
+echo "waiting for sqlint build finish..."
+wait
+
+echo "begin to start server..."
+cd ../../example/monaco_editor
+nohup npm run start >> $nohup_log 2>&1 &
 
 tail -n 5 ${log_file}
 
