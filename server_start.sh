@@ -30,8 +30,8 @@ echo "begin to start server..."
 cd ./example/monaco_editor
 nohup npm run start >> $nohup_log 2>&1 &
 
-# 使用 wait 命令等待所有并行命令完成
-wait
+# 等待命令执行完成
+sleep 5s
 
 tail -n 5 ${log_file}
 
