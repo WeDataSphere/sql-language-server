@@ -52,8 +52,7 @@
     "vscode-languageserver": "8.0.0-next.8",
     "vscode-languageserver-protocol": "^3.15.3",
     "vscode-languageserver-textdocument": "^1.0.1",
-    "yargs": "^17.3.1",
-    "dt-sql-parser":"3.0.5"
+    "yargs": "^17.3.1"
   },
   "devDependencies": {
     "@types/jest": "^25.2.2",
