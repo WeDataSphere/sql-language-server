@@ -1,0 +1,6 @@
+node_modules/
+example/monaco_editor/node_modules/
+packages/server/node_modules/
+packages/sql-parser/node_modules/
+packages/sqlint/node_modules/
+package-lock.json

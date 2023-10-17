@@ -30,6 +30,8 @@ import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { syncBody } from './database_libs/CommonUtils'
 
+const ini = require('ini');
+
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
 const logger = log4js.getLogger()
@@ -37,11 +39,17 @@ const logger = log4js.getLogger()
 const TRIGGER_CHARATER = '.'
 const insertTable = ''
 let map_schema={}
-let cache_tables=[]
+let cache_tables:any[]=[]
 let map_association_catch = {}
 
-const envConfig = require("../../../env.json")
-Object.assign(process.env,envConfig)
+function readPropertiesFile(key:any) {
+  const fileContent = fs.readFileSync('../../../params.properties', 'utf-8');
+  const properties = ini.parse(fileContent);
+  return properties[key];
+}
+
+const timing_interval = readPropertiesFile('timing_interval');
+const timing_time = readPropertiesFile('timing_time');
 
 export const map_colums={}
 
@@ -513,14 +521,14 @@ const timeoutFunc =(config, func) =>{
   initializeLogging(false)
   logger.info("定时任务执行中。。。")
   const nowTime = new Date().getTime()
-  const timePoints = process.env.timing_time.split(':').map(i => parseInt(i))
+  const timePoints = timing_time.split(':').map(i => parseInt(i))
   let recent = new Date().setHours(...timePoints)
   recent >= nowTime || (recent += 24 * 3600000)
   logger.info("recent - nowTime:",recent - nowTime)
   setTimeout(() => {
     func()
     const client = getDatabaseClient()
-    setInterval(func, process.env.timing_interval * 3600000 * 24)
+    setInterval(func, timing_interval * 3600000 * 24)
     logger.info("===========定时任务执行成功==================")
     client.basesNumberInit()
     logger.info("map_schema:",map_schema)
