@@ -105,7 +105,9 @@
     "npm-run-all": "^4.1.5",
     "prettier": "^2.5.1",
     "typescript": "^4.5.5",
-    "wait-on": "^5.0.1"
+    "wait-on": "^5.0.1",
+    "dt-sql-parser":"4.0.0-beta.2.2",
+    "ini": "^4.1.1"
   },
   "dependencies": {
     "esbuild-linux-64": "^0.15.3",

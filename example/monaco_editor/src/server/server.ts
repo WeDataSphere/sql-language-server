@@ -5,42 +5,32 @@ import type net from "net";
 import url from "url";
 import type rpc from "vscode-ws-jsonrpc";
 import { launchServer } from "./launchServer";
-//import log4js from 'log4js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-//const logger = log4js.getLogger()
-const envConfig = require("../../../../env.json")
-Object.assign(process.env,envConfig)
+const fs = require('fs');
+const ini = require('ini');
 
-process.setMaxListeners(0)
-process.on("uncaughtException", function (err: any) {
-  //logger.error("Uncaught Exception: ", err.toString());
-  if (err.stack) {
-    //logger.error(err.stack);
-  }
-});
+function readPropertiesFile(key:any) {
+  const fileContent = fs.readFileSync('../../../params.properties', 'utf-8');
+  const properties = ini.parse(fileContent);
+  return properties[key];
+}
+
+const server_port = readPropertiesFile('server_port');
+console.log(server_port);
+
+const timing_interval = readPropertiesFile('timing_interval');
+console.log(timing_interval);
+
+const timing_time = readPropertiesFile('timing_time');
+console.log(timing_time);
 
 let server: http.Server;
 let cookieArry = {}
 
-function getWebsocketKey(headers: string):string{
-  if(headers === "" || headers == void 0){
-    return ""
-  }
-  //logger.info("type of headers:",typeof(headers))
-  //let headerToStr = JSON.stringify(headers).replace(/\"/g, "")
-  let strWebsocketKey
-  //logger.info("getWebsocketKey headers:",headers)
-  var regExp_headers = '(?<="sec-websocket-key":")[^"]+'
-  var websocketKey = headers.match(regExp_headers)[0]||"";
-  //logger.info("websocketKey:",websocketKey)
-  return websocketKey
-}
-
 function startServer() {
   const app = express();
   app.use(express.static(`${process.cwd()}/dist`));
-  server = app.listen(process.env.server_port);
+  server = app.listen(server_port);
   //logger.info("startServer");
 
   const wss = new ws.Server({
@@ -100,13 +90,13 @@ function startServer() {
 const timeoutFunc =(func) =>{
   //logger.info("定时任务执行中。。。")
   const nowTime = new Date().getTime()
-  const timePoints = process.env.timing_time.split(':').map(i => parseInt(i))
+  const timePoints = timing_time.split(':').map((i: string) => parseInt(i))
   let recent = new Date().setHours(...timePoints)
   recent >= nowTime || (recent += 24 * 3600000)
   //logger.info("recent - nowTime:",recent - nowTime)
   setTimeout(() => {
     func()
-    setInterval(func, process.env.timing_interval * 3600000 * 24)
+    setInterval(func, timing_interval * 3600000 * 24)
     //logger.info("===========定时任务执行成功==================")
     //logger.info("cookieArry:",cookieArry)
     //logger.info("=============================================")
