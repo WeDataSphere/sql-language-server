@@ -41,7 +41,7 @@ function startServer() {
   });
 
   //设置最大监听器数量
-  server.setMaxListeners(100);
+  server.setMaxListeners(20);
 
   server.on(
     "upgrade",
