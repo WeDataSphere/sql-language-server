@@ -7,11 +7,11 @@ cd "${base_path}"
 echo -e "current path: ${base_path}"
 
 # 读取配置文件
-config=$(cat env.json)
+config=$(cat params.properties)
 echo -e "config file params:${config}"
 
-# 解析 JSON 数据
-log_file=$(echo "${config}" | jq -r '.log_file')
+# 解析数据
+log_file=$(echo "${config}" | grep "^log_file=" | cut -d'=' -f2)
 echo -e "log file:${log_file}"
 
 record_path=$(dirname $log_file)/language-server-kill-record.log
