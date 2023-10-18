@@ -40,6 +40,9 @@ function startServer() {
     perMessageDeflate: false,
   });
 
+  //设置最大监听器数量
+  server.setMaxListeners(100);
+
   server.on(
     "upgrade",
     (request: http.IncomingMessage, socket: net.Socket, head: Buffer) => {
