@@ -39,10 +39,8 @@ let map_schema:any={}
 let cache_tables:any[]=[]
 let map_association_catch:any = {}
 
-const timing_interval = readPropertiesFile('timing_interval');
-const timing_time = readPropertiesFile('timing_time');
 const parser_enable = readPropertiesFile('parser_enable');
-logger.info("read params: timing_interval、timing_time、parser_enable ", timing_interval, timing_time, parser_enable)
+logger.info("read params: parser_enable ", parser_enable)
 
 export const map_colums={}
 
@@ -464,14 +462,14 @@ const timeoutFunc =(config, func) =>{
   initializeLogging(false)
   logger.info("定时任务执行中。。。")
   const nowTime = new Date().getTime()
-  const timePoints = timing_time.split(':').map(i => parseInt(i))
+  const timePoints = readPropertiesFile('timing_time').split(':').map(i => parseInt(i))
   let recent = new Date().setHours(...timePoints)
   recent >= nowTime || (recent += 24 * 3600000)
   logger.info("recent - nowTime:",recent - nowTime)
   setTimeout(() => {
     func()
     const client = getDatabaseClient()
-    setInterval(func, timing_interval * 3600000 * 24)
+    setInterval(func, readPropertiesFile('timing_interval') * 3600000 * 24)
     logger.info("===========定时任务执行成功==================")
     client.basesNumberInit()
     logger.info("map_schema:",map_schema)

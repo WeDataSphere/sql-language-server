@@ -30,7 +30,7 @@ type ColumField = {
 
   export function readPropertiesFile(key: any) {
     try {
-        const configPath = path.join(path.resolve(__dirname, '../../../'), "/params.properties");
+        const configPath = path.join(path.resolve(__dirname, '../../../../'), "/params.properties");
         const fileContent = fs.readFileSync(configPath, "utf-8");
         const properties = ini.parse(fileContent);
         return properties[key];
