@@ -42,6 +42,7 @@ let map_association_catch:any = {}
 const timing_interval = readPropertiesFile('timing_interval');
 const timing_time = readPropertiesFile('timing_time');
 const parser_enable = readPropertiesFile('parser_enable');
+logger.info("read params: timing_interval、timing_time、parser_enable ", timing_interval, timing_time, parser_enable)
 
 export const map_colums={}
 

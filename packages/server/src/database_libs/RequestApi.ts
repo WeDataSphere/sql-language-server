@@ -28,12 +28,18 @@ type ColumField = {
     partitioned: string
   }
 
-export function readPropertiesFile(key:any) {
-    const configPath = path.join(path.resolve(__dirname, '../../../'),"/params.properties")
-    const fileContent = fs.readFileSync(configPath, "utf-8");
-    const properties = ini.parse(fileContent);
-    return properties[key];
+  export function readPropertiesFile(key: any) {
+    try {
+        const configPath = path.join(path.resolve(__dirname, '../../../'), "/params.properties");
+        const fileContent = fs.readFileSync(configPath, "utf-8");
+        const properties = ini.parse(fileContent);
+        return properties[key];
+    } catch (error) {
+        logger.error("读取配置文件出错：", error);
+        return null;
+    }
 }
+
 
 export async function getAllDatabases(ticketId:string):Promise<string[]>{
     var body = await syncBody(linkis_addr + '/api/rest_j/v1/datasource/all','GET',ticketId);
