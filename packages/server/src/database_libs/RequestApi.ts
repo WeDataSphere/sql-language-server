@@ -71,7 +71,6 @@ export  async function getTableColums(db:string,table:string, ticketId:string):P
     }else{
        logger.info(body.message)
     }
-    logger.info("request linkis getColums=====>",body.data)
     return body.data
    }
  
@@ -83,6 +82,5 @@ export  async function getSchemaBaseInfo(dbName:string, ticketId:string):Promise
      }else{
         logger.info(body.message)
      }
-     logger.info("request linkis getSchemaBaseInfo=====>",body.data)
      return body.data
     }

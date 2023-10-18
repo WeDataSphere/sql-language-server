@@ -466,16 +466,20 @@ const timeoutFunc =(config, func) =>{
   let recent = new Date().setHours(...timePoints)
   recent >= nowTime || (recent += 24 * 3600000)
   logger.info("recent - nowTime:",recent - nowTime)
-  setTimeout(() => {
-    func()
-    const client = getDatabaseClient()
-    setInterval(func, readPropertiesFile('timing_interval') * 3600000 * 24)
-    logger.info("===========定时任务执行成功==================")
-    client.basesNumberInit()
-    logger.info("map_schema:",map_schema)
-    logger.info("cache_tables:",cache_tables)
-    logger.info("=============================================")
-  }, recent - nowTime)
+  try {
+    setTimeout(() => {
+      func()
+      const client = getDatabaseClient()
+      setInterval(func, readPropertiesFile('timing_interval') * 3600000 * 24)
+      logger.info("===========定时任务执行成功==================")
+      client.basesNumberInit()
+      logger.info("map_schema:",map_schema)
+      logger.info("cache_tables:",cache_tables)
+      logger.info("=============================================")
+    }, recent - nowTime)
+  } catch (error) {
+    logger.error("定时任务执行异常：", error);
+  }
 }
 
 timeoutFunc(config,()=>{

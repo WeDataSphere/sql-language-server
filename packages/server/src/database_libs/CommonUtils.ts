@@ -40,9 +40,15 @@ export let synchronous_method = function (url,method,ticketId) {
   }
 }
 
-export let syncBody = async function (url,method,ticketId) {
-  logger.info("get into syncBody:",url,method,ticketId)
-  var url = url;
-  let body = await synchronous_method(url,method,ticketId);
-  return JSON.parse(body);
-}
+export let syncBody = async function (url, method, ticketId) {
+  try {
+    logger.info("get into syncBody:", url, method, ticketId);
+    var url = url;
+    let body = await synchronous_method(url, method, ticketId);
+    return JSON.parse(body);
+  } catch (error) {
+    logger.error("Error in syncBody:", error);
+    throw error;
+  }
+};
+
