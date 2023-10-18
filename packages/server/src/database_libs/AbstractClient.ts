@@ -1,39 +1,11 @@
-import { readFileSync } from 'fs'
 import log4js from 'log4js'
-import { SSHConnection } from 'node-ssh-forward'
-import { Connection } from '../SettingStore'
-import { syncBody } from './CommonUtils'
 import { CompletionItemTag } from 'vscode-languageserver-types'
+import { getAllDatabases,getUdfAll} from './RequestApi'
 
 const logger = log4js.getLogger()
 let sumDatabases = 0
 let sumTables = 0
-export const dbs = []
-
-async function getAllDatabases(ticketId:string):string[]{
-  var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/all','GET',ticketId);
-  if(+body.status===0){
-    logger.info(ticketId +":"+"request /api/rest_j/v1/datasource/all success!")
-  }else{
-    logger.info(ticketId +":"+"/api/rest_j/v1/datasource/all linkis call error:",body.message)
-    return;
-  }
-  const result = body.data.dbs 
-  dbs = result
-  return result;
-}
-
-async function getUdfAll(ticketId:string):string[]{
-   var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/udf/all','POST',ticketId);
-   if(+body.status===0){
-    logger.info(ticketId +":"+ "request /api/rest_j/v1/udf/all success!")
-  }else{
-    logger.info(ticketId +":"+"/api/rest_j/v1/udf/all linkis call error:",body.message)
-    return;
-  }
-  const udfInfos = body.data.udfTree.udfInfos
-  return udfInfos
-}
+export let dbs = []
 
 export type RawField = {
   field: string
@@ -91,6 +63,7 @@ export default abstract class AbstractClient {
       schema.functions = functions
       logger.info("================get all databases ===================")
       let result = await getAllDatabases(ticketId)
+      dbs = result;
       if(typeof(result)=="undefined"){
          result=[];
       }

@@ -28,56 +28,22 @@ import SettingStore, { Connection as SettingConnection } from './SettingStore'
 import { Schema } from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
-import { syncBody } from './database_libs/CommonUtils'
-
-const ini = require('ini');
+import { getTableColums,getSchemaBaseInfo,readPropertiesFile } from './database_libs/RequestApi'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
 const logger = log4js.getLogger()
 
 const TRIGGER_CHARATER = '.'
-const insertTable = ''
-let map_schema={}
+let map_schema:any={}
 let cache_tables:any[]=[]
-let map_association_catch = {}
-
-function readPropertiesFile(key:any) {
-  const fileContent = fs.readFileSync('../../../params.properties', 'utf-8');
-  const properties = ini.parse(fileContent);
-  return properties[key];
-}
+let map_association_catch:any = {}
 
 const timing_interval = readPropertiesFile('timing_interval');
 const timing_time = readPropertiesFile('timing_time');
+const parser_enable = readPropertiesFile('parser_enable');
 
 export const map_colums={}
-
-export type ColumsInfo = {
-  columnComment: string | null
-  columnName: string
-  columnType: string
-}
-
-type TimingConfig = {
-  interval: number
-  time: string
-}
-
-type SchemaInfo = {
-  dbCapacity: string
-  dbName: string
-  dbSize: string
-  description: string
-  tableQuantity: string
-}
-
-type ColumField = {
-  columnName: string
-  columnType: string
-  columnComment: string
-  partitioned: string
-}
 
 const config = {//参数的说明
   interval: 0, //间隔天数，间隔为整数
@@ -139,35 +105,11 @@ export function createServerWithConnection(
     connection.sendDiagnostics(diagnostics)
   }
 
-  async function getTableColums(db:string,table:string):ColumsInfo[]{
-   logger.info("call function getTableColums...")
-   var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/datasource/columns?database=' + db + '&table=' + table,'GET',dss_cookie);
-   if(+body.status===0){
-      logger.info("call linkis method /api/rest_j/v1/datasource/columns?database=" + db + '&table=' + table + " success!")
-   }else{
-      logger.info(body.message)
-   }
-   logger.info("request linkis getColums=====>",body.data)
-   return body.data
-  }
-
-  async function getSchemaBaseInfo(dbName:string):SchemaInfo{
-    logger.info("call function getSchemaBaseInfo...")
-    var body = await syncBody(process.env.linkis_addr + '/api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=' + dbName,'GET',dss_cookie);
-    if(+body.status===0){
-       logger.info("call linkis method /api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=" + dbName + " success!")
-    }else{
-       logger.info(body.message)
-    }
-    logger.info("request linkis getSchemaBaseInfo=====>",body.data)
-    return body.data
-   }
-
   documents.onDidChangeContent(async (params) => {
     logger.debug(
       `onDidChangeContent: ${params.document.uri}, ${params.document.version}`
     )
-    if(process.env.parser_enable)
+    if(parser_enable)
       makeDiagnostics(params.document)
   })
 
@@ -382,7 +324,7 @@ export function createServerWithConnection(
     if(item.kind ===4){
       let dbName = item.label.trim()
       //调用api/rest_j/v1/dss/datapipe/datasource/getSchemaBaseInfo?dbName=bdp_dqm_tmp_db
-      let schemaInfo = await getSchemaBaseInfo(dbName)
+      let schemaInfo = await getSchemaBaseInfo(dbName, ticketId)
       //console.log("schemaInfo:",schemaInfo)
       if (schemaInfo != void 0)
         item.documentation = 
@@ -403,7 +345,7 @@ export function createServerWithConnection(
            return item
        }
        //调用接口获取字段数据
-       let colums =  await getTableColums(db,table)
+       let colums =  await getTableColums(db,table,ticketId)
        //组装字段
        map_schema[ticketId].tables.forEach(x=>{
           if(x.database==db&&x.tableName==table){

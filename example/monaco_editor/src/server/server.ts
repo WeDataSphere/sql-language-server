@@ -1,4 +1,5 @@
 import express from "express";
+import path from 'path'
 import ws from "ws";
 import type http from "http";
 import type net from "net";
@@ -10,7 +11,8 @@ const fs = require('fs');
 const ini = require('ini');
 
 function readPropertiesFile(key:any) {
-  const fileContent = fs.readFileSync('../../../params.properties', 'utf-8');
+  const configPath = path.join(path.resolve(__dirname, '../../../../'),"/params.properties")
+  const fileContent = fs.readFileSync(configPath, "utf-8");
   const properties = ini.parse(fileContent);
   return properties[key];
 }

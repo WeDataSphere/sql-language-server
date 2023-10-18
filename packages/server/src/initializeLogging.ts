@@ -2,14 +2,24 @@ import * as path from 'path'
 import log4js from 'log4js'
 import process from 'process'
 
+const fs = require('fs');
+const ini = require('ini');
+
 const MAX_LOG_SIZE = 1024 * 1024 * 100
 const MAX_LOG_BACKUPS = 10
 const logger = log4js.getLogger()
 
+function readPropertiesFile(key:any) {
+  const configPath = path.join(path.resolve(__dirname, '../../../'),"/params.properties")
+  const fileContent = fs.readFileSync(configPath, "utf-8");
+  const properties = ini.parse(fileContent);
+  return properties[key];
+}
+
 export default function initializeLogging(debug = false) {
   let LOG_FILE_PATH = '/appcom/logs/dssInstall/sql-language-server.log'
-  if(process.env.log_file !== void 0 ){
-     LOG_FILE_PATH = process.env.log_file
+  if(readPropertiesFile("log_file") !== void 0 ){
+     LOG_FILE_PATH = readPropertiesFile("log_file")
   }
   let LOG_FILE_DIR = path.resolve(LOG_FILE_PATH, '../')
   try {
