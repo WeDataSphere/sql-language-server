@@ -57,41 +57,9 @@ export function createServerWithConnection(
   var ticketId = dss_cookie
   const documents = new TextDocuments(TextDocument)
   documents.listen(connection)
-  let schema: Schema = { tables: [], functions: [] }
   let hasConfigurationCapability = false
   let rootPath = ''
   let lintConfig: RawConfig | null | undefined
-
-  // Read schema file
-  function readJsonSchemaFile(filePath: string) {
-    if (filePath[0] === '~') {
-      const home = process.env.HOME || ''
-      filePath = path.join(home, filePath.slice(1))
-    }
-    logger.info(`loading schema file: ${filePath}`)
-    const data = fs.readFileSync(filePath, 'utf8').replace(/^\ufeff/u, '')
-    try {
-      schema = JSON.parse(data)
-    } catch (e) {
-      const err = e as NodeJS.ErrnoException
-      logger.error('failed to read schema file ' + err.message)
-      connection.sendNotification('sqlLanguageServer.error', {
-        message:
-          'Failed to read schema file: ' + filePath + ' error: ' + err.message,
-      })
-      throw e
-    }
-  }
-
-  function readAndMonitorJsonSchemaFile(filePath: string) {
-    fs.watchFile(filePath, () => {
-      logger.info(`change detected, reloading schema file: ${filePath}`)
-      readJsonSchemaFile(filePath)
-    })
-    // The readJsonSchemaFile function can throw exceptions so
-    // read file only after setting up monitoring
-    readJsonSchemaFile(filePath)
-  }
 
   async function makeDiagnostics(document: TextDocument) {
     const hasRules =
@@ -314,7 +282,7 @@ export function createServerWithConnection(
     return [action]
   })
 
-  connection.onCompletionResolve(async (item: CompletionItem): CompletionItem => {
+  connection.onCompletionResolve(async (item: CompletionItem): Promise<CompletionItem> => {
     if(item.kind === 10 && item.documentation === "过期函数") item.tags = [1]
     //kind=22为基础函数
     if(item.kind === 22)
@@ -447,15 +415,6 @@ export function createServer(
   return createServerWithConnection(connection, params.cookie || '', params.debug)
 }
 
-function objectArraySort(keyName:string) {
-  return function (objectN, objectM) {
-    var valueN = objectN[keyName]
-    var valueM = objectM[keyName]
-    if (valueN > valueM) return 1
-    else if (valueN < valueM) return -1
-    else return 0
-  }
-}
 
 //定时任务，定时清理schema缓存
 const timeoutFunc =(config, func) =>{

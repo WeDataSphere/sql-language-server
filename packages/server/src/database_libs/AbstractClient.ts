@@ -102,12 +102,6 @@ export default abstract class AbstractClient {
     return schema
   }
 
-  private toColumnFromRawField(field: RawField): Column {
-    return {
-      columnName: field.field,
-      description: `${field.field}(Type: ${field.type}, Null: ${field.null}, Default: ${field.default})`,
-    }
-  }
 
   public basesNumberInit(): void {
     logger.info("============初始化库表数据载入===========")

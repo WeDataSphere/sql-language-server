@@ -21,14 +21,8 @@ export type ColumsInfo = {
     columnType: string
 }
 
-type ColumField = {
-    columnName: string
-    columnType: string
-    columnComment: string
-    partitioned: string
-  }
 
-  export function readPropertiesFile(key: any) {
+export function readPropertiesFile(key: any) {
     try {
         const configPath = path.join(path.resolve(__dirname, '../../../../'), "/params.properties");
         const fileContent = fs.readFileSync(configPath, "utf-8");
