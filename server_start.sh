@@ -34,15 +34,17 @@ function run(){
     echo "log dirname: $nohup_log"
 
     echo "begin to build sqlint..."
-    cd ./packages/sqlint
-    nohup npm run build >> $nohup_log 2>&1
+    # cd ./packages/sqlint
+    # nohup npm run build >> $nohup_log 2>&1
+    nohup npm run build:sqlint && run-p watch:sqlint watch:server >> $nohup_log 2>&1
 
     # 等待sqlint构建完成
     echo "waiting for sqlint build finish..."
     wait
 
     echo "begin to start server..."
-    cd ../../example/monaco_editor
+    # cd ../../example/monaco_editor
+    cd ./example/monaco_editor
     nohup npm run start >> $nohup_log 2>&1 &
 
     tail -n 5 "${log_file}"
