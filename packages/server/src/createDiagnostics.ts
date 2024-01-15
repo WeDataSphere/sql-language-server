@@ -7,6 +7,7 @@ import cache, { LintCache } from './cache'
 import { SparkSQL,GenericSQL,HiveSQL,FlinkSQL,splitSql } from 'dt-sql-parser';
 
 const logger = log4js.getLogger()
+const regex = /\$\{([^}]+)\}/g;
 
 function getParser(type: string){
   let parser;
@@ -35,6 +36,7 @@ export default function createDiagnostics(
   logger.debug(`into method createDiagnostics`)
   let suffix = uri.substring(uri.lastIndexOf('.') + 1)
   let diagnostics: Diagnostic[] = []
+  sql = strReplace(sql)
   if(sql === ""){
     return diagnostics
   }
@@ -84,5 +86,9 @@ function sqlError(uri: string,
       relatedInformation: [],
     })
   return diagnostics
+}
+
+function strReplace(text:string){
+  return text.replace(regex, "'$&'");
 }
 
