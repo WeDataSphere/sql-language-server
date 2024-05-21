@@ -47,7 +47,7 @@ function startServer() {
     "upgrade",
     (request: http.IncomingMessage, socket: net.Socket, head: Buffer) => {
       const path = request.url ? url.parse(request.url).pathname : undefined;
-      if (path === "/server") {
+      if (path?.startsWith("/server")) {
         wss.handleUpgrade(request, socket, head, (webSocket) => {
           let webSockets = webSocket
           let dss_cookie='';
@@ -75,16 +75,18 @@ function startServer() {
             //onClose: (cb) => webSockets.on("close", cb),
             dispose: () => webSockets.close(),
           };
-          //logger.info("cookieArry[dss_cookie]:",Object.keys(cookieArry))
-          if (webSockets.readyState === webSockets.OPEN) {
-            //logger.info("webSockets.OPEN dss_cookie:",dss_cookie)
-            //logger.info("ready to launch server");
-            launchServer(socket,dss_cookie);
-          } else {
-            webSockets.on("open", () => {
+          if (path === "/server") {
+            //logger.info("cookieArry[dss_cookie]:",Object.keys(cookieArry))
+            if (webSockets.readyState === webSockets.OPEN) {
+              //logger.info("webSockets.OPEN dss_cookie:",dss_cookie)
               //logger.info("ready to launch server");
               launchServer(socket,dss_cookie);
-            });
+            } else {
+              webSockets.on("open", () => {
+                //logger.info("ready to launch server");
+                launchServer(socket,dss_cookie);
+              });
+            }
           }
         });
       }
