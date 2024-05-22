@@ -23,7 +23,7 @@ echo -e "check sql-language-server process"
 for SLS_PID in `ps aux | grep ${base_path} | grep nodejs/bin/node | grep src/server/server.ts |egrep -v "grep" | awk '{print $2}'`
  do
    echo -e "[${current_time}][sql-language-server] kill process id: ${SLS_PID}" |tee -a ${record_path}
-   # SLS_PID is empty,跳出循环
+   # SLS_PID is empty,跳过这次循环
    if [ -z "$SLS_PID" ]; then
        continue
    fi
