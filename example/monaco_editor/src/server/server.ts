@@ -91,10 +91,6 @@ function startServer() {
     }
   );
 
-  app.get('/welb_health_check', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end();
-  });
 }
 
 const timeoutFunc =(func) =>{
