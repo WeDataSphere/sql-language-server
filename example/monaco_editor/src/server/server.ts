@@ -91,11 +91,13 @@ function startServer() {
     }
   );
 
-  
   app.get('/welb_health_check', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end();
+    endGet(res);
   });
+}
+
+async function endGet(res:any){
+  res.end("websocket connect success!");
 }
 
 const timeoutFunc =(func) =>{
