@@ -36,7 +36,7 @@ function run(){
     echo "begin to build sqlint..."
     # cd ./packages/sqlint
     # nohup npm run build >> $nohup_log 2>&1
-    nohup npm run build:sqlint && run-p watch:sqlint watch:server watch:dev-server:client >> $nohup_log 2>&1
+    nohup npm run build:sqlint >> $nohup_log 2>&1
 
     # 等待sqlint构建完成
     echo "waiting for sqlint build finish..."
