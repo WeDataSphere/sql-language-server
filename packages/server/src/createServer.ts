@@ -415,6 +415,24 @@ export function createServer(
   return createServerWithConnection(connection, params.cookie || '', params.debug)
 }
 
+//清理缓存
+export function cleanCache(dss_cookie:string){
+  logger.error("-----------------------------------开始清理缓存--------------------------------------")
+  var ticketId = dss_cookie
+  try {
+    setTimeout(() => {
+      delete map_schema[ticketId]
+      delete cache_tables[ticketId]
+      delete map_association_catch[ticketId]
+      logger.info("map_schema:",map_schema)
+      logger.info("cache_tables:",cache_tables)
+      logger.info("=============================================")
+    }, 3600000)
+  } catch (error) {
+    logger.error("清理缓存执行异常：", error);
+  }
+}
+
 
 //定时任务，定时清理schema缓存
 const timeoutFunc =(config, func) =>{
@@ -444,5 +462,6 @@ const timeoutFunc =(config, func) =>{
 timeoutFunc(config,()=>{
   map_schema = {}
   cache_tables=[]
+  map_association_catch = {}
 })
 
