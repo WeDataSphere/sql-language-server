@@ -439,7 +439,7 @@ const timeoutFunc =(config, func) =>{
       const client = getDatabaseClient()
       setInterval(func, readPropertiesFile('timing_interval') * 3600000 * 24)
       logger.info("===========定时任务执行成功==================")
-      client.basesNumberInit()
+  
       logger.info("map_schema:",map_schema)
       logger.info("cache_tables:",cache_tables)
       logger.info("=============================================")
@@ -453,5 +453,10 @@ timeoutFunc(config,()=>{
   map_schema = {}
   cache_tables=[]
   map_association_catch = {}
+  logger.info("===========定时任务执行成功==================")
+  logger.info("map_schema:",map_schema)
+  logger.info("cache_tables:",cache_tables)
+  logger.info("map_association_catch:",map_association_catch)
+  logger.info("=============================================")
 })
 
