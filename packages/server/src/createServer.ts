@@ -121,7 +121,6 @@ export function createServerWithConnection(
             logger.info("process in call get schema")
             map_schema[ticketId] = await client.getSchema(dss_cookie)
          }
-         map_association_catch[ticketId] = map_schema[ticketId]
        } catch (e) {
          logger.error('failed to get schema info')
          throw e
@@ -183,16 +182,6 @@ export function createServerWithConnection(
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
-    if(typeof(map_schema[ticketId]) === 'undefined' || typeof(map_association_catch[ticketId]) === 'undefined'){
-       map_schema[ticketId] = {"tables":[],"functions":[],"association":""}
-       map_association_catch[ticketId] = {"tables":[],"functions":[],"association":""}
-    }
-    if(map_schema[ticketId] && map_schema[ticketId].association === 'close' && Object.keys(map_schema[ticketId].tables).length > 0){
-       map_association_catch[ticketId] = map_schema[ticketId]
-       map_schema[ticketId] = {tables: [], functions: [],association: "close"}
-    }else if(map_schema[ticketId] && map_schema[ticketId].association === 'open' && Object.keys(map_association_catch[ticketId].tables).length > 0){
-       map_schema[ticketId] = map_association_catch[ticketId]
-    }
      let textArray = []
      if(text.includes(";")){
        let textTrim = text.trim()
@@ -463,5 +452,12 @@ timeoutFunc(config,()=>{
   map_schema = {}
   cache_tables=[]
   map_association_catch = {}
+  logger.info("===========定时任务执行成功==================")
+      const client = getDatabaseClient()
+      client.basesNumberInit()
+      logger.info("map_schema:",map_schema)
+      logger.info("cache_tables:",cache_tables)
+      logger.info("map_association_catch:",cache_tables)
+      logger.info("=============================================")
 })
 
