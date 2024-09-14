@@ -40,3 +40,20 @@ export function getAliasFromFromTableNode(node: FromTableNode): string {
 export function makeColumnName(alias: string, columnName: string) {
   return alias ? alias + '.' + columnName : columnName
 }
+
+export function getRidOfAfterPosString2(sql: string, pos: Pos): string {
+  let returnSql = sql
+    .split('\n')
+    .filter((_v, idx) => pos.line > idx)
+    .join('\n')
+  //拼接分号前的数据
+  let after = sql
+    .split('\n')
+    .filter((_v, idx) => pos.line <= idx)
+    .join('\n')
+  if(after){
+    let match = after.match(/^[^;]*(?=;)/)
+    return returnSql + '\n' + (match?match[0]:after)
+  }
+  return returnSql
+}

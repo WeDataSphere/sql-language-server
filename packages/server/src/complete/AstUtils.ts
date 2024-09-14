@@ -93,15 +93,43 @@ export function findColumnAtPosition(
   } else if (columns.type == 'star') {
     if (ast.type === 'select' && ast.where?.expression) {
       // columns in where clause
-      const columnRefs =
-        ast.where.expression.type === 'column_ref' ? [ast.where.expression] : []
+//       const columnRefs =
+//         ast.where.expression.type === 'column_ref' ? [ast.where.expression] : []
       // column at position
-      const columnRef = getColumnRefByPos(columnRefs, pos)
+      const columnRef = findColumnAtPosition2([ast.where.expression],pos)
       if (logger.isDebugEnabled()) logger.debug(JSON.stringify(columnRef))
       return columnRef ?? null
     }
   }
   return null
+}
+
+function findColumnAtPosition2(columnRefs:ColumnRefNode[],pos:Pos) : ColumnRefNode{
+  const comlums:ColumnRefNode[] = columnRefs.filter(
+    (v) =>
+      // guard against ColumnRefNode that don't have a location,
+      // for example sql functions that are not known to the parser
+      v.location &&
+      v.location.start.line === pos.line + 1 &&
+      v.location.start.column <= pos.column &&
+      v.location.end.line === pos.line + 1 &&
+      v.location.end.column >= pos.column
+  ) ?? null
+  if(comlums){
+    const comlum:ColumnRefNode = comlums.pop
+    if((comlum && comlum.type === 'column_ref')||!comlum){
+      if(comlum){
+        return comlum
+      }
+    }else if(comlum && comlum.type === 'binary_expr'){
+      let comlumArray : ColumnRefNode[] = []
+      comlum.left && comlumArray.push(comlum.left)
+      comlum.right && comlumArray.push(comlum.right)
+      if(findColumnAtPosition2(comlumArray,pos)){
+        return findColumnAtPosition2(comlumArray,pos)
+      }
+    }
+  }
 }
 
 /**

@@ -81,7 +81,8 @@ class Completer {
   }
 
   complete() {
-    let target = getRidOfAfterPosString(this.sql, this.pos)
+    //let target = getRidOfAfterPosString(this.sql, this.pos)
+    let target = this.sql || ''
     target = target && target.trim().split(';\n').pop() || ''
     //console.log("target:",target)
     this.lastToken = getLastToken(target)
@@ -124,7 +125,7 @@ class Completer {
             ) || []
           this.addCandidatesForJoins(expectedLiteralNodes, fromNodes)
         }
-      } 
+      }
       //else if (this.sql.trim().toLowerCase().startsWith('insert into')){
       else if (e.message === 'EXPECTED COLUMN NAME') {
         logger.debug("EXPECTED COLUMN NAME for insert")
@@ -186,7 +187,7 @@ class Completer {
     if (item.kind === 10){
        item.sortText = 'b'
     }
-    
+
     // JupyterLab requires the dot or space character preceeding the <tab> key pressed
     // If the dot or space character are not added to the label then searching
     // in the list of suggestion does not work.
@@ -524,9 +525,36 @@ export function complete(
 ) {
   //if (logger.isDebugEnabled())
   //  logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
-  const completer = new Completer(schema, sql, pos, jupyterLabMode)
+  let sqlAndPos:SqlAndPos = resetSqlAndPos(sql,pos)
+  const completer = new Completer(schema, sqlAndPos.sql, sqlAndPos.pos, jupyterLabMode)
   let candidates = getNewArr(completer.complete())
   return { candidates: candidates, error: completer.error }
+}
+
+type SqlAndPos = {
+  sql:string;
+  pos:Pos;
+}
+
+export function reset(text:string,pos:Pos) : ResetVo {
+  let target = getRidOfAfterPosString(text, pos)
+  let sqlArray: string[]
+  if(target && target.indexOf(';')>0){
+    sqlArray = target.trim().split(';')
+    target = target && sqlArray.pop() || ''
+
+    const newLineRegex = /\r\n|\n|\r/g;
+    let preSql = sqlArray.join("")
+    text = target
+
+    let line = (preSql.match(newLineRegex) || []).length
+    pos.line = pos.line - line >=0 ? pos.line - line : 0
+    if(target.startsWith("\n")) {
+        pos.line = pos.line-1
+        text = text.replace(/^\n*/, '')
+    }
+  }
+  return {text,pos}
 }
 
 function getNewArr(arr:CompletionItem[]){

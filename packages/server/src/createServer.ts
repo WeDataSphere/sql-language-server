@@ -29,6 +29,7 @@ import { Schema } from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { getTableColums,getSchemaBaseInfo,readPropertiesFile } from './database_libs/RequestApi'
+import { getRidOfAfterPosString2 } from './complete/StringUtils'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
@@ -182,19 +183,52 @@ export function createServerWithConnection(
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
-     let textArray = []
-     if(text.includes(";")){
-       let textTrim = text.trim()
-       textArray = textTrim.split(";")
-       if(textTrim.endsWith(";")){
-         logger.info("end with ';':",textArray.length)
-         text = textArray[textArray.length-2]
-       }else{
-         logger.info("with no :",textArray.length)
-         text = textArray[textArray.length-1]
-       }
+//      let textArray = []
+//      if(text.includes(";")){
+//        let textTrim = text.trim()
+//        textArray = textTrim.split(";")
+//        if(textTrim.endsWith(";")){
+//          logger.info("end with ';':",textArray.length)
+//          text = textArray[textArray.length-2]
+//        }else{
+//          logger.info("with no :",textArray.length)
+//          text = textArray[textArray.length-1]
+//        }
+//     }
+
+    //重新定位光标
+    let target = getRidOfAfterPosString2(text, pos)
+    if(target && target.indexOf(';')>0){
+
+      let sqlArray: string[]
+
+      sqlArray = target.trim().split(';')
+      target = target && sqlArray.pop() || ''
+
+      const newLineRegex = /\r\n|\n|\r/g;
+      let preSql = sqlArray.join(";")
+      text = target
+
+      let line = (preSql.match(newLineRegex) || []).length
+      pos.line = pos.line - line >=0 ? pos.line - line : 0
+
+      if(text.startsWith("\n")) {
+        let matchLength = (text.match(/^[\r\n]+/) || '')[0].length
+        pos.line = pos.line-matchLength
+        text = text.replace(/^\n*/, '')
+      }else if(pos.line === 0){
+        let preLength = 0
+        const lastNewLineIndex = preSql.lastIndexOf('\n');
+        if (lastNewLineIndex === -1) {
+          preLength = preSql.length;
+        } else {
+          preLength = preSql.length - lastNewLineIndex - 1; // 减去换行符本身的长度1
+        }
+        pos.column = pos.column - preLength -1 >=0 ? pos.column - preLength -1 : 0
+      }
+      logger.info(`newTestAndPos : test:${text} ; pos : ${JSON.stringify(pos)}`)
     }
- 
+
     const candidates = complete(
       text,
       pos,
@@ -283,11 +317,11 @@ export function createServerWithConnection(
       let schemaInfo = await getSchemaBaseInfo(dbName, ticketId)
       //console.log("schemaInfo:",schemaInfo)
       if (schemaInfo != void 0)
-        item.documentation = 
-          ' 库名：' + dbName + 
-          '\r\n 库大小：' + schemaInfo.schemaInfo.dbSize + 
-          '\r\n 库配额：' + schemaInfo.schemaInfo.dbCapacity + 
-          '\r\n 表数量：' + schemaInfo.schemaInfo.tableQuantity + 
+        item.documentation =
+          ' 库名：' + dbName +
+          '\r\n 库大小：' + schemaInfo.schemaInfo.dbSize +
+          '\r\n 库配额：' + schemaInfo.schemaInfo.dbCapacity +
+          '\r\n 表数量：' + schemaInfo.schemaInfo.tableQuantity +
           '\r\n 备注：' + schemaInfo.schemaInfo.description
     }
     //联想表kind=5
