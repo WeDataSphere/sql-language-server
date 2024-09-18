@@ -83,7 +83,6 @@ class Completer {
   complete() {
     //let target = getRidOfAfterPosString(this.sql, this.pos)
     let target = this.sql || ''
-    target = target && target.trim().split(';\n').pop() || ''
     //console.log("target:",target)
     this.lastToken = getLastToken(target)
     const idx = this.lastToken.lastIndexOf('.')
