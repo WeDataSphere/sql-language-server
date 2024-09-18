@@ -535,7 +535,7 @@ type SqlAndPos = {
   pos:Pos;
 }
 
-export function reset(text:string,pos:Pos) : ResetVo {
+export function resetSqlAndPos(text:string,pos:Pos) : ResetVo {
   let target = getRidOfAfterPosString(text, pos)
   let sqlArray: string[]
   if(target && target.indexOf(';')>0){
