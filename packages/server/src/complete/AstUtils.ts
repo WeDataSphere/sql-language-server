@@ -116,7 +116,7 @@ function findColumnAtPosition2(columnRefs:ColumnRefNode[],pos:Pos) : ColumnRefNo
       v.location.end.column >= pos.column
   ) ?? null
   if(comlums){
-    const comlum:ColumnRefNode = comlums.pop
+    const comlum:ColumnRefNode = comlums.pop()
     if((comlum && comlum.type === 'column_ref')||!comlum){
       if(comlum){
         return comlum
