@@ -524,36 +524,9 @@ export function complete(
 ) {
   //if (logger.isDebugEnabled())
   //  logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
-  let sqlAndPos:SqlAndPos = resetSqlAndPos(sql,pos)
-  const completer = new Completer(schema, sqlAndPos.sql, sqlAndPos.pos, jupyterLabMode)
+  const completer = new Completer(schema, sql, pos, jupyterLabMode)
   let candidates = getNewArr(completer.complete())
   return { candidates: candidates, error: completer.error }
-}
-
-type SqlAndPos = {
-  sql:string;
-  pos:Pos;
-}
-
-export function resetSqlAndPos(text:string,pos:Pos) : ResetVo {
-  let target = getRidOfAfterPosString(text, pos)
-  let sqlArray: string[]
-  if(target && target.indexOf(';')>0){
-    sqlArray = target.trim().split(';')
-    target = target && sqlArray.pop() || ''
-
-    const newLineRegex = /\r\n|\n|\r/g;
-    let preSql = sqlArray.join("")
-    text = target
-
-    let line = (preSql.match(newLineRegex) || []).length
-    pos.line = pos.line - line >=0 ? pos.line - line : 0
-    if(target.startsWith("\n")) {
-        pos.line = pos.line-1
-        text = text.replace(/^\n*/, '')
-    }
-  }
-  return {text,pos}
 }
 
 function getNewArr(arr:CompletionItem[]){
