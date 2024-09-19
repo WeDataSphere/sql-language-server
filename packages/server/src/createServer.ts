@@ -116,8 +116,8 @@ export function createServerWithConnection(
     try {
          const client = getDatabaseClient()
          logger.info("call connection.onInitialized ========>>>>>")
-         logger.info("user if ticketId:",ticketId)
-         logger.info("connection.onInitialized map_schema:",Object.keys(map_schema))
+         //logger.info("user if ticketId:",ticketId)
+         //logger.info("connection.onInitialized map_schema:",Object.keys(map_schema))
          if(!Object.keys(map_schema).includes(ticketId)){
             logger.info("process in call get schema")
             map_schema[ticketId] = await client.getSchema(dss_cookie)
@@ -236,6 +236,9 @@ export function createServerWithConnection(
           preLength = preSql.length - lastNewLineIndex - 1; // 减去换行符本身的长度1
         }
         pos.column = pos.column - preLength -1 >=0 ? pos.column - preLength -1 : 0
+      }
+      if(text && text.indexOf(';')>0){
+        text = text.replace(';', '')
       }
       logger.info(`newTestAndPos : test:${text} ; pos : ${JSON.stringify(pos)}`)
     }
