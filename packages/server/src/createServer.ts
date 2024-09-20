@@ -29,7 +29,7 @@ import { Schema } from './database_libs/AbstractClient'
 import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { getTableColums,getSchemaBaseInfo,readPropertiesFile } from './database_libs/RequestApi'
-import { getRidOfAfterPosString2 } from './complete/StringUtils'
+import { getRidOfAfterPosString } from './complete/StringUtils'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
@@ -208,7 +208,7 @@ export function createServerWithConnection(
 //     }
 
     //重新定位光标
-    let target = getRidOfAfterPosString2(text, pos)
+    let target = getRidOfAfterPosString(text, pos)
     if(target && target.indexOf(';')>0){
 
       let sqlArray: string[]
@@ -236,9 +236,6 @@ export function createServerWithConnection(
           preLength = preSql.length - lastNewLineIndex - 1; // 减去换行符本身的长度1
         }
         pos.column = pos.column - preLength -1 >=0 ? pos.column - preLength -1 : 0
-      }
-      if(text && text.indexOf(';')>0){
-        text = text.replace(';', '')
       }
       logger.info(`newTestAndPos : test:${text} ; pos : ${JSON.stringify(pos)}`)
     }
