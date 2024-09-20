@@ -246,7 +246,8 @@ export function createServerWithConnection(
       text,
       pos,
       map_schema[ticketId],
-      setting.jupyterLabMode
+      setting.jupyterLabMode,
+      ticketId
     ).candidates
 
     let new_candidates

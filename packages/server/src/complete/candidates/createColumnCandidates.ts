@@ -5,6 +5,7 @@ import { getAliasFromFromTableNode, makeColumnName } from '../StringUtils'
 import { isTableMatch } from '../AstUtils'
 import { ICONS } from '../CompletionItemUtils'
 import { Identifier } from '../Identifier'
+import { getTableColums } from './database_libs/RequestApi'
 
 export function createCandidatesForColumnsOfAnyTable(
   tables: Table[],
@@ -34,6 +35,7 @@ export function createCandidatesForScopedColumns(
   fromNodes: FromTableNode[],
   tables: Table[],
   lastToken: string
+  ticketId: string
 ): CompletionItem[] {
   return tables
     .flatMap((table) => {
@@ -41,7 +43,12 @@ export function createCandidatesForScopedColumns(
         .filter((fromNode) => isTableMatch(fromNode, table))
         .map(getAliasFromFromTableNode)
         .filter((alias) => lastToken.startsWith(alias + '.'))
-        .flatMap((alias) =>
+        .flatMap((alias) =>{
+          if(!table.columns){
+            let colums =  await getTableColums(table.database,table.tableName,ticketId)
+            //组装字段
+            table.columns = colums.colums
+          }
           table.columns.map((col) => {
             return new Identifier(
               lastToken,
@@ -52,7 +59,7 @@ export function createCandidatesForScopedColumns(
               ICONS.COLUMN
             )
           })
-        )
+        })
     })
     .filter((item) => item.matchesLastToken())
     .map((item) => item.toCompletionItem())

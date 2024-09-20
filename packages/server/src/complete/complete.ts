@@ -72,12 +72,14 @@ class Completer {
   isSpaceTriggerCharacter = false
   isDotTriggerCharacter = false
   jupyterLabMode: boolean
+  ticketId: string
 
-  constructor(schema: Schema, sql: string, pos: Pos, jupyterLabMode: boolean) {
+  constructor(schema: Schema, sql: string, pos: Pos, jupyterLabMode: boolean, ticketId:string) {
     this.schema = schema
     this.sql = sql
     this.pos = pos
     this.jupyterLabMode = jupyterLabMode
+    this.ticketId = ticketId
   }
 
   complete() {
@@ -268,7 +270,8 @@ class Completer {
         this.schema,
         fromText,
         newPos,
-        this.jupyterLabMode
+        this.jupyterLabMode,
+        this.ticketId
       )
       completer.complete().forEach((item) => this.addCandidate(item))
     }
@@ -498,7 +501,7 @@ class Completer {
 
   addCandidatesForScopedColumns(fromNodes: FromTableNode[], tables: Table[]) {
     //logger.info("=====into addCandidatesForScopedColumns=====")
-    createCandidatesForScopedColumns(fromNodes, tables, this.lastToken).forEach(
+    createCandidatesForScopedColumns(fromNodes, tables, this.lastToken, this.ticketId).forEach(
       (v) => {
         this.addCandidate(v)
       }
@@ -520,11 +523,12 @@ export function complete(
     tables: [], functions: [],
     association: ''
   },
-  jupyterLabMode = false
+  jupyterLabMode = false,
+  ticketId: string
 ) {
   //if (logger.isDebugEnabled())
   //  logger.debug(`complete: ${sql}, ${JSON.stringify(pos)}`)
-  const completer = new Completer(schema, sql, pos, jupyterLabMode)
+  const completer = new Completer(schema, sql, pos, jupyterLabMode, ticketId)
   let candidates = getNewArr(completer.complete())
   return { candidates: candidates, error: completer.error }
 }
