@@ -238,6 +238,8 @@ export function createServerWithConnection(
         pos.column = pos.column - preLength -1 >=0 ? pos.column - preLength -1 : 0
       }
       logger.info(`newTestAndPos : test:${text} ; pos : ${JSON.stringify(pos)}`)
+    }else{
+      text = target
     }
 
     const candidates = complete(
