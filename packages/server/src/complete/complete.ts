@@ -42,6 +42,8 @@ import { createJoinTablesCandidates } from './candidates/createJoinTableCndidate
 import { createBaseColumnsCandidates } from './candidates/createBaseColumnsCandidates'
 import { createDefinedGrammarCandidates } from './candidates/createDefinedGrammarCandidates'
 import { ICONS, toCompletionItemForKeyword } from './CompletionItemUtils'
+import { getTableColums } from '../database_libs/RequestApi'
+import { isTableMatch } from './AstUtils'
 
 export type Pos = { line: number; column: number }
 
@@ -91,6 +93,24 @@ class Completer {
     this.isSpaceTriggerCharacter = this.lastToken === ''
     this.isDotTriggerCharacter =
       !this.isSpaceTriggerCharacter && idx == this.lastToken.length - 1
+
+    const parsedFromClause2 = getFromNodesFromClause(this.sql)
+    //初始化表字段
+    if (parsedFromClause2) {
+      const fromNodes1 = getAllNestedFromNodes(
+        parsedFromClause2?.from?.tables || []
+      )
+      fromNodes1
+      .flatMap((fromNode) => {
+        this.schema.tables
+        .filter((table) => isTableMatch(fromNode, table))
+        .flatMap((table) =>{
+          logger.info(`colums:${table.columns}`)
+          getTableColums(table.database||'',table.tableName,this.ticketId).then(res=>{table.columns = res.columns })
+          logger.info(`colums:${table.columns}`)
+        })
+      })
+    }
 
     try {
       const ast = parse(target)
@@ -501,7 +521,7 @@ class Completer {
 
   addCandidatesForScopedColumns(fromNodes: FromTableNode[], tables: Table[]) {
     //logger.info("=====into addCandidatesForScopedColumns=====")
-    createCandidatesForScopedColumns(fromNodes, tables, this.lastToken, this.ticketId).forEach(
+    createCandidatesForScopedColumns(fromNodes, tables, this.lastToken).forEach(
       (v) => {
         this.addCandidate(v)
       }
@@ -541,3 +561,4 @@ function getNewArr(arr:CompletionItem[]){
   })
   return rec
 }
+
