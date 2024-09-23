@@ -6,6 +6,9 @@ import { isTableMatch } from '../AstUtils'
 import { ICONS } from '../CompletionItemUtils'
 import { Identifier } from '../Identifier'
 import { getTableColums } from '../../database_libs/RequestApi'
+import log4js from 'log4js'
+
+const logger = log4js.getLogger()
 
 export function createCandidatesForColumnsOfAnyTable(
   tables: Table[],
@@ -43,13 +46,16 @@ export function createCandidatesForScopedColumns(
         .filter((fromNode) => isTableMatch(fromNode, table))
         .map(getAliasFromFromTableNode)
         .filter((alias) => lastToken.startsWith(alias + '.'))
-        .flatMap(async (alias) =>{
+        .flatMap((alias) =>{
+          logger.info("table.columns :", table.columns)
           if(!table.columns){
-            let colums =  await getTableColums(table.database||'',table.tableName,ticketId)
+            logger.info("123")
+            let colums =  syncMethodWithAwait(table,ticketId)
             //组装字段
             table.columns = colums.colums
+            logger.info(`colums:${colums.colums}`)
           }
-          table.columns.map((col) => {
+          return table.columns.map((col) => {
             return new Identifier(
               lastToken,
               makeColumnName(alias, col.columnName),
@@ -63,4 +69,8 @@ export function createCandidatesForScopedColumns(
     })
     .filter((item) => item.matchesLastToken())
     .map((item) => item.toCompletionItem())
+}
+
+function syncMethodWithAwait(table:Table,ticketId: string) {
+  return (async () => await getTableColums(table.database||'',table.tableName,ticketId))();
 }
