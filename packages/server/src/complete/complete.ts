@@ -106,7 +106,9 @@ class Completer {
         .filter((table) => isTableMatch(fromNode, table))
         .flatMap((table) =>{
           logger.info(`colums:${table.columns}`)
-          getTableColums(table.database||'',table.tableName,this.ticketId).then(res=>{table.columns = res.columns })
+          if(!table.columns){
+            getTableColums(table.database||'',table.tableName,this.ticketId).then(res=>{table.columns = res.columns })
+          }
           logger.info(`colums:${table.columns}`)
         })
       })
