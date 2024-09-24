@@ -30,6 +30,12 @@ import getDatabaseClient from './database_libs/getDatabaseClient'
 import initializeLogging from './initializeLogging'
 import { getTableColums,getSchemaBaseInfo,readPropertiesFile } from './database_libs/RequestApi'
 import { getRidOfAfterPosString } from './complete/StringUtils'
+import {
+  parseFromClause,
+} from '@joe-re/sql-parser'
+import {
+  getAllNestedFromNodes,isTableMatch
+} from './complete/AstUtils'
 
 export type ConnectionMethod = 'node-ipc' | 'stdio'
 
@@ -48,6 +54,15 @@ export const map_colums={}
 const config = {//参数的说明
   interval: 0, //间隔天数，间隔为整数
   time: "1:00:00" //执行的时间点 时在0~23之间
+}
+
+export function getFromNodesFromClause(sql: string): FromClauseParserResult | null {
+  try {
+    return parseFromClause(sql)
+  } catch (_e) {
+    // no-op
+    return null
+  }
 }
 
 export function createServerWithConnection(
@@ -165,7 +180,7 @@ export function createServerWithConnection(
     }
   })
 
-  connection.onCompletion((docParams: CompletionParams): CompletionItem[] => {
+  connection.onCompletion(async (docParams: CompletionParams): Promise<CompletionItem[]> => {
     logger.info("-----------connection onCompletion-------------")
     if (
       docParams.context?.triggerKind == CompletionTriggerKind.TriggerCharacter
@@ -240,6 +255,26 @@ export function createServerWithConnection(
       logger.info(`newTestAndPos : test:${text} ; pos : ${JSON.stringify(pos)}`)
     }else{
       text = target
+    }
+
+    const parsedFromClause = getFromNodesFromClause(text)
+    //初始化表字段
+    if (parsedFromClause) {
+      const fromNodes = getAllNestedFromNodes(
+        parsedFromClause?.from?.tables || []
+      )
+      for (let index = 0; index < fromNodes.length; index++) {
+        const fromNode = fromNodes[index];
+        for (let index = 0; index < map_schema[ticketId].tables.length; index++) {
+          const table = map_schema[ticketId].tables[index];
+          if(isTableMatch(fromNode, table)){
+            if(!table.columns){
+              let columns = await getTableColums(table.database||'',table.tableName,ticketId) 
+              table.columns = columns.columns
+            }
+          }
+        }
+      }
     }
 
     const candidates = complete(

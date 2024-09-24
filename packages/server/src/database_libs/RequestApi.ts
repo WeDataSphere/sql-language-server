@@ -77,4 +77,4 @@ export  async function getSchemaBaseInfo(dbName:string, ticketId:string):Promise
         logger.info(body.message)
      }
      return body.data
-    }
+}

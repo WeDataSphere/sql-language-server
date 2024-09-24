@@ -13,7 +13,6 @@ import {
 import log4js from 'log4js'
 import { CompletionItem } from 'vscode-languageserver-types'
 import { Schema, Table } from '../database_libs/AbstractClient'
-import { getRidOfAfterPosString } from './StringUtils'
 import { getLastToken } from './utils/getLastToken'
 import {
   isPosInLocation,
@@ -93,27 +92,6 @@ class Completer {
     this.isSpaceTriggerCharacter = this.lastToken === ''
     this.isDotTriggerCharacter =
       !this.isSpaceTriggerCharacter && idx == this.lastToken.length - 1
-
-    const parsedFromClause2 = getFromNodesFromClause(this.sql)
-    //初始化表字段
-    if (parsedFromClause2) {
-      const fromNodes1 = getAllNestedFromNodes(
-        parsedFromClause2?.from?.tables || []
-      )
-      fromNodes1
-      .flatMap((fromNode) => {
-        this.schema.tables
-        .filter((table) => isTableMatch(fromNode, table))
-        .flatMap((table) =>{
-          logger.info(`colums:${table.columns}`)
-          if(!table.columns){
-            getTableColums(table.database||'',table.tableName,this.ticketId).then(res=>{table.columns = res.columns })
-          }
-          logger.info(`colums:${table.columns}`)
-        })
-      })
-    }
-
     try {
       const ast = parse(target)
       logger.debug("after parse target:",ast)
