@@ -227,7 +227,10 @@ export function createServerWithConnection(
     if(target && target.indexOf(';')>0){
 
       let sqlArray: string[]
-
+      let preLength = 0
+      if(text.startsWith("\n")){
+        preLength = (target.match(/^[\r\n]+/) || '')[0].length
+      }
       sqlArray = target.trim().split(';')
       target = target && sqlArray.pop() || ''
 
@@ -236,7 +239,7 @@ export function createServerWithConnection(
       text = target
 
       let line = (preSql.match(newLineRegex) || []).length
-      pos.line = pos.line - line >=0 ? pos.line - line : 0
+      pos.line = pos.line - line - preLength>=0 ? pos.line - line : 0
 
       if(text.startsWith("\n")) {
         let matchLength = (text.match(/^[\r\n]+/) || '')[0].length
