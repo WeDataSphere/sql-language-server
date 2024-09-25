@@ -129,6 +129,7 @@ export function createServerWithConnection(
 
   connection.onInitialized(async () => {
     try {
+         map_association_catch[ticketId] = 'open'
          const client = getDatabaseClient()
          logger.info("call connection.onInitialized ========>>>>>")
          //logger.info("user if ticketId:",ticketId)
@@ -137,7 +138,7 @@ export function createServerWithConnection(
             logger.info("process in call get schema")
             map_schema[ticketId] = await client.getSchema(dss_cookie)
          }
-         map_association_catch[ticketId] = map_schema[ticketId]
+         //map_association_catch[ticketId] = map_schema[ticketId]
        } catch (e) {
          logger.error('failed to get schema info')
          throw e
@@ -199,15 +200,16 @@ export function createServerWithConnection(
       column: docParams.position.character,
     }
     const setting = SettingStore.getInstance().getSetting()
-    if(typeof(map_schema[ticketId]) === 'undefined' || typeof(map_association_catch[ticketId]) === 'undefined'){
-       map_schema[ticketId] = {"tables":[],"functions":[],"association":""}
-       map_association_catch[ticketId] = {"tables":[],"functions":[],"association":""}
+//     if(typeof(map_schema[ticketId]) === 'undefined' || typeof(map_association_catch[ticketId]) === 'undefined'){
+//        map_schema[ticketId] = {"tables":[],"functions":[],"association":""}
+//        map_association_catch[ticketId] = {"tables":[],"functions":[],"association":""}
+//     }
+    let completeSchema: Schema = {
+      tables: [], functions: [],
+      association: ''
     }
-    if(map_schema[ticketId] && map_schema[ticketId].association === 'close' && Object.keys(map_schema[ticketId].tables).length > 0){
-       map_association_catch[ticketId] = map_schema[ticketId]
-       map_schema[ticketId] = {tables: [], functions: [],association: "close"}
-    }else if(map_schema[ticketId] && map_schema[ticketId].association === 'open' && Object.keys(map_association_catch[ticketId].tables).length > 0){
-       map_schema[ticketId] = map_association_catch[ticketId]
+    if(map_association_catch[ticketId] === 'open'){
+      completeSchema = map_schema[ticketId]
     }
 //      let textArray = []
 //      if(text.includes(";")){
@@ -262,7 +264,7 @@ export function createServerWithConnection(
 
     const parsedFromClause = getFromNodesFromClause(text)
     //初始化表字段
-    if (parsedFromClause) {
+    if (map_association_catch[ticketId] === 'open'&&parsedFromClause) {
       const fromNodes = getAllNestedFromNodes(
         parsedFromClause?.from?.tables || []
       )
@@ -272,7 +274,7 @@ export function createServerWithConnection(
           const table = map_schema[ticketId].tables[index];
           if(isTableMatch(fromNode, table)){
             if(!table.columns){
-              let columns = await getTableColums(table.database||'',table.tableName,ticketId) 
+              let columns = await getTableColums(table.database||'',table.tableName,ticketId)
               table.columns = columns.columns
             }
           }
@@ -283,7 +285,7 @@ export function createServerWithConnection(
     const candidates = complete(
       text,
       pos,
-      map_schema[ticketId],
+      completeSchema,
       setting.jupyterLabMode,
       ticketId
     ).candidates
@@ -426,11 +428,9 @@ export function createServerWithConnection(
       const operate = request.arguments ? request.arguments[0] : null
       logger.info("change association",operate)
       if( operate === 'close'){
-        map_schema[ticketId].association = 'close'
-        map_association_catch[ticketId].association = 'close'
+        map_association_catch[ticketId] = 'close'
       } else {
-        map_schema[ticketId].association = 'open'
-        map_association_catch[ticketId].association = 'close'
+        map_association_catch[ticketId] = 'open'
       }
     } else if (
       request.command === 'fixAllFixableProblems' ||
